@@ -1,8 +1,10 @@
-import PySimpleGUI as sg
+from datetime import datetime
 import json
 import os
 #import psutil
 import sys
+
+import PySimpleGUI as sg
 from pyperclip import copy
 
 QT_ENTER_KEY1 =  'special 16777220'
@@ -34,7 +36,7 @@ if SELECTED_DIR == '':
         [sg.Text(key='-INFO-', size=(20,1))],
         ]
 
-    prompt_window = sg.Window('Select your project', prompt_layout)
+    prompt_window = sg.Window('Select your project', prompt_layout, location=(80, 500),)
 
     while True:
         event, values = prompt_window.Read()
@@ -56,9 +58,14 @@ os.chdir(SELECTED_DIR_FULL_PATH)#This is crucial, as it sets the working directo
 TODO_DIR = os.path.join(os.getcwd(), "todo")
 if not os.path.isdir(TODO_DIR):
     os.mkdir(TODO_DIR)
+
 TODO_FILE = r"./todo/todo_list.txt"
 DONE_FILE = r"./todo/done_list.txt"
 
+ARCHIVE_DIR = os.path.join(os.getcwd(), "todo", "archive")
+if not os.path.isdir(ARCHIVE_DIR):
+    os.mkdir(ARCHIVE_DIR)
+    
 WIDTH = 25
 HEIGHT = 7
 
@@ -80,7 +87,7 @@ def debug(text):
     window.Element('debug').Update(text)
 
 # --------------- IO -----------------------
-def write_to_file(input_ , filename)->str:
+def write_to_file(input_ :list, filename:str)->str:
     """returns the input_ string if wrote successfully, else returns None"""
     with open(filename, 'w+', encoding='utf-8') as file:
         for i in input_:
@@ -111,7 +118,8 @@ def add_text_to_list(input_key:str, list_key:str):
     new_item = window.Element(input_key).get()
     window.Element(input_key).Update("")
 
-    list_values.append(new_item)
+    if new_item != "":
+        list_values.append(new_item)
     window.Element(list_key).Update(values=list_values) 
 
 def move_from_list_to_list(item:str, list_A_key:str, list_B_key:str):
@@ -159,7 +167,7 @@ layout = [
                 size=(WIDTH, HEIGHT),
                 no_scrollbar=True,
                 enable_events=True,
-                right_click_menu=['&Right', ["Copy", "Delete", "Todo"]],
+                right_click_menu=['&Right', ["Copy", "Delete", "Todo", "Archive list"]],
                 background_color='white',
                 )], 
         [sg.InputText(key="input_text_done", size=(25, 1))],
@@ -173,7 +181,7 @@ layout = [
     
     [sg.OK('add', key="add_item", visible=False)], #add_ext_ is the key for event handling
     [sg.Button('Save', key='Save'), sg.Button('Safe Exit', key='Safe Exit'), sg.Button('Open Folder', key=os.getcwd())],
-    [sg.Multiline('Debugger', key="debug", size=(WIDTH, HEIGHT))],
+    [sg.Multiline('debugger', key="debug", size=(WIDTH, 2))],
           ]
 
 sg.theme('DarkTeal12')
@@ -183,6 +191,7 @@ window = sg.Window("*** TO DO ***",
                    #no_titlebar=True,
                    return_keyboard_events=True,
                    resizable=True,
+                   location=(80, 500),
                    )
 
 #---------- 
@@ -219,7 +228,9 @@ while True:
             
     if event == "add_item":
         add_text_to_list("input_text_todo", "todo_list")
+        write_to_file(todo_list, TODO_FILE)
         add_text_to_list("input_text_done", "done_list")
+        write_to_file(done_list, DONE_FILE)
 
 #----------Right click events ----------     
     if event == "Copy":
@@ -240,12 +251,24 @@ while True:
             debug("Failed to delete, probably no element selected")
 
     if event == "Done":
-        item = window.Element("todo_list").get()[0]
+        item = window["todo_list"].get()[0]
         move_from_list_to_list(item, "todo_list", "done_list")
         
     if event == "Todo":
         item = window.Element("done_list").get()[0]
         move_from_list_to_list(item, "done_list", "todo_list")
+
+    if event == "Archive list":
+        key = window.FindElementWithFocus().Key
+        try:
+            list_ = window[key].get_list_values()
+            archive_datetime = datetime.now().strftime('%Y-%m-%d_%H-%M')
+            archive_path = os.path.join(ARCHIVE_DIR, f"{archive_datetime}.txt")
+            write_to_file(list_, archive_path)
+            debug("Archive created")
+            window[key].Update([])
+        except Exception as err:
+            debug(f'Failed to archive:{err}')
 
     if event == os.getcwd():
         os.system(f"start explorer {os.getcwd()}")
