@@ -186,9 +186,10 @@ layout = [
 
 sg.theme('DarkTeal12')
 window = sg.Window("*** TO DO ***",
-                   layout, keep_on_top=True,
+                   layout,
+                   keep_on_top=True,
                    #grab_anywhere=True,
-                   #no_titlebar=True,
+                   no_titlebar=True,
                    return_keyboard_events=True,
                    resizable=True,
                    location=(80, 500),
