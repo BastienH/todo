@@ -162,19 +162,19 @@ def user_interface():
                 
         if capturing_region:
             if init == []:
-                event, value = get_region_to_capture()
-                if event == 'init':
+                step, value = get_region_to_capture()
+                if step == 'init':
                     init = value
                     end = []
             elif init != []:
-                event, value = get_region_to_capture()
-                if event == 'end':
+                step, value = get_region_to_capture()
+                if step == 'end':
                     end = value
                     capturing_region= False
                     window["Capture Region"].Update("Capture Region",
                                                     button_color=sg.LOOK_AND_FEEL_TABLE[THEME]['BUTTON'])
             else:
-                print("Where did you land man...")
+                print("Where did you land man...?")
         else:
             pass
         
@@ -192,7 +192,7 @@ def user_interface():
             control.stop()
 
     #-------------- Capture every minute --------------------
-        #if (control.state) and (timestamp.second in [0, 10, 20, 30, 40, 50]): 
+        #if control.state and timestamp.second in [0, 10, 20, 30, 40, 50]: 
         if control.state and timestamp.second == 0:
             screens = []
             if inputs[1]:

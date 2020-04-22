@@ -142,7 +142,8 @@ menu_def = [['Go to', PROJECTS],
 
 layout = [
     [sg.Menu(menu_def, )],
-    [sg.Text(SELECTED_DIR, font=15, background_color = sg.LOOK_AND_FEEL_TABLE["DarkTeal12"]["BACKGROUND"] ),],
+    [sg.Text(SELECTED_DIR, font=15, background_color = sg.LOOK_AND_FEEL_TABLE["DarkTeal12"]["BACKGROUND"] ),
+     sg.Button('^', key='toggle_win_size'),],
     [sg.Frame("To do", [
         [sg.Listbox(values=todo_list, key="todo_list",
                 size=(WIDTH, HEIGHT),
@@ -188,13 +189,14 @@ sg.theme('DarkTeal12')
 window = sg.Window("*** TO DO ***",
                    layout,
                    keep_on_top=True,
-                   #grab_anywhere=True,
+                   grab_anywhere=True,
                    no_titlebar=True,
                    return_keyboard_events=True,
                    resizable=True,
-                   location=(80, 500),
-                   )
+                   location=(-263, 430),
+                   ).Finalize()
 
+default_win_size = window.Size
 #---------- 
 while True:
     event, inputs = window.Read()
@@ -267,10 +269,23 @@ while True:
             archive_path = os.path.join(ARCHIVE_DIR, f"{archive_datetime}.txt")
             write_to_file(list_, archive_path)
             debug("Archive created")
-            window[key].Update([])
+            window[key].Update([]) #Clear list view
+            write_to_file([], DONE_FILE) #Clear current done.txt
+            done_list = [] #Clear variable
         except Exception as err:
             debug(f'Failed to archive:{err}')
-
+            
+    if event == 'toggle_win_size':
+        current_location = window.CurrentLocation()
+        if window.Size != (180, 40):
+            window.Size = (180, 40)
+            new_location = tuple(map(sum, zip(current_location, (40, 440))))
+            window.Move(*new_location)
+        else:
+            window.Size = default_win_size
+            new_location = tuple(map(sum, zip(current_location, (-40, -440))))
+            window.Move(*new_location)
+            
     if event == os.getcwd():
         os.system(f"start explorer {os.getcwd()}")
 
