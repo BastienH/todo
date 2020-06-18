@@ -14,6 +14,10 @@ QT_ENTER_KEY2 =  'special 16777221'
 CODE_BASE = r"C:\Users\DMHM6522\CodeBase" #This has to be configured for each user
 PROJECTS = [d for d in os.listdir(CODE_BASE) if os.path.isdir(os.path.join(CODE_BASE, d))]
 
+#Listes dimensions
+WIDTH = 25 #chars
+HEIGHT = 7 #lines
+
 #Credit to aminusfu : https://github.com/cherrypy/cherrypy/blob/0857fa81eb0ab647c7b59a019338bab057f7748b/cherrypy/process/wspbus.py#L305
 startup_cwd = os.getcwd() #Used in do_execv, to swap between projects
 
@@ -65,9 +69,33 @@ DONE_FILE = r"./todo/done_list.txt"
 ARCHIVE_DIR = os.path.join(os.getcwd(), "todo", "archive")
 if not os.path.isdir(ARCHIVE_DIR):
     os.mkdir(ARCHIVE_DIR)
-    
-WIDTH = 25
-HEIGHT = 7
+
+#Pour afficher les tâches de toutes les projets
+if os.path.basename(SELECTED_DIR_FULL_PATH) == "All_todo":
+    open('./todo/todo_list.txt', 'w').close() #On supprime les données existantes
+    #Pour tous les dossiers dans la base de projets, on ouvre leur todo_list.txt (si il existe)
+    for DIR in os.listdir(CODE_BASE):
+        tmp = []
+        if DIR == "All_todo" or os.path.isfile(f'{CODE_BASE}/{DIR}'):
+            continue
+        try:
+            with open(f'{CODE_BASE}/{DIR}/todo/todo_list.txt') as source:
+                tmp = source.readlines()
+
+        except FileNotFoundError:
+            pass
+        #Pour le format on prend la taille du nom du dossier, et on rajoute autant d'espace que nécessaire pour aligner
+        max_dir_len = max(
+            [len(d) for d in os.listdir(CODE_BASE) if os.path.isdir(f'{CODE_BASE}/{d}')])
+        delta_len = max_dir_len - len(DIR)
+        tmp = [DIR + ' '*delta_len + elem for elem in tmp]
+        #Finalement on créé une liste pour All_todo
+        with open('./todo/todo_list.txt', 'a') as target:
+            target.writelines(tmp)
+    #Et on change les dimensions des listes pour que ce soit plus lisible
+    WIDTH = 60
+    HEIGHT = 15
+
 
 def do_execv(event):
     """Re-execute the current process.
@@ -190,10 +218,10 @@ window = sg.Window("*** TO DO ***",
                    layout,
                    keep_on_top=True,
                    grab_anywhere=True,
-                   no_titlebar=True,
+                   #no_titlebar=True,
                    return_keyboard_events=True,
                    resizable=True,
-                   location=(-263, 430),
+                   location=(263, 430),
                    ).Finalize()
 
 default_win_size = window.Size
@@ -277,8 +305,9 @@ while True:
             
     if event == 'toggle_win_size':
         current_location = window.CurrentLocation()
-        if window.Size != (180, 40):
-            window.Size = (180, 40)
+        #Largeur est au moins 180, sinon plus, si le titre du dossier est plus long (pour éviter que le bouton soit caché
+        if window.Size != (max(180, len(SELECTED_DIR)*8+50), 40): 
+            window.Size = (max(180, len(SELECTED_DIR)*8+50), 40)
             new_location = tuple(map(sum, zip(current_location, (40, 440))))
             window.Move(*new_location)
         else:

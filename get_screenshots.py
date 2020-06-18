@@ -3,6 +3,9 @@ import os
 from PIL import ImageGrab
 import time
 import win32api
+import webbrowser
+from threading import Thread
+from win32api import EnumDisplayMonitors
 
 import pyautogui as ag
 import PySimpleGUI as sg
@@ -22,8 +25,8 @@ if state_left == 1:
     state_left = 0
 
     
-def capture(directory:str, filename:str, region=None, colors=True, screens=[1, 2]) -> str:
-
+def capture(directory: str, filename: str, region=None, colors=True, screens=[1, 2]) -> str:
+    """"""
     filename = '_'.join(filename.split('_')[1:]) # day_HH_MM_SS
         
     if not os.path.isdir(directory):
@@ -34,15 +37,28 @@ def capture(directory:str, filename:str, region=None, colors=True, screens=[1, 2
     try:
         SS = ImageGrab.grab(all_screens=True)
         if region is not None:
-            sc_width, sc_height = SS.size
-            region[0] = region[0] + sc_width/2
-            region[2] = region[2] + sc_width/2
-            left = min(region[0], region[2])
-            right = max(region[0], region[2])
-            upper = min(region[1], region[3])
-            lower = max(region[1], region[3])
-            bbox = (left, upper, right, lower)
-            SS = SS.crop(bbox)
+            print(screens)
+            if screens == [1, 2]:
+                sc_width, sc_height = SS.size
+                region[0] = region[0] + sc_width/2
+                region[2] = region[2] + sc_width/2
+                left = min(region[0], region[2])
+                right = max(region[0], region[2])
+                upper = min(region[1], region[3])
+                lower = max(region[1], region[3])
+                bbox = (left, upper, right, lower)
+                SS = SS.crop(bbox)
+            elif screens == [1]:
+                print(region)
+                sc_width, sc_height = SS.size
+                #region[0] = region[0] + sc_width / 2
+                #region[2] = region[2] + sc_width / 2
+                left = min(region[0], region[2])
+                right = max(region[0], region[2])
+                upper = min(region[1], region[3])
+                lower = max(region[1], region[3])
+                bbox = (left, upper, right, lower)
+                SS = SS.crop(bbox)
 
         if not colors:
             SS = SS.convert(mode='L') #Grey scale
@@ -80,6 +96,12 @@ def get_region_to_capture():
     else:
         return None, None
 
+def get_mouse_position():
+    """"""
+    currentMouseX, currentMouseY = ag.position()
+    return [currentMouseX, currentMouseY]
+
+        
 def start_paint(path:str)-> None:
     if path == None:
         return
@@ -96,36 +118,60 @@ def login_screen(path:str)-> bool:
     else:
         return False
 
+def start_bird():
+    bird_thread = Thread(target=move_mouse).start()
+        
 def move_mouse():
-    currentMouseX, currentMouseY = ag.position()
-    try:
-        ag.moveTo(currentMouseX+20, currentMouseY)
-        ag.moveTo(currentMouseX+30, currentMouseY)
-    except ag.FailSafeException:
-        ag.moveTo(currentMouseX-20, currentMouseY)
-        ag.moveTo(currentMouseX-30, currentMouseY)
     
-    ag.moveTo(currentMouseX, currentMouseY)
-         
+    try:
+        bird_thread.join()
+    except Exception as err:
+        print(err)
+    webbrowser.open("homer's bird.gif")
+    webbrowser.open('notepad++')
+    time.sleep(5)
+    ag.write("Piou Piou", interval=0.5)
+    ag.press('space') 
+    
+
+def screen_checkboxes():
+    if len(EnumDisplayMonitors()) == 1:
+        return sg.Checkbox("[1]", key=1, default=True), sg.Checkbox("[2]", key=2, default=False, visible=False)
+    else:
+        return sg.Checkbox("[1]", key=1, default=True), sg.Checkbox("[2]", key=2, default=True)
+
+def get_n_screens(inputs):
+    """"""
+    screens = []
+    if inputs[1]:
+        screens.append(1)
+    if inputs[2]:
+        screens.append(2)
+    return screens
+
 def user_interface():
     layout = [
-    [sg.Button('Initializing', key = 'TOGGLE AUTO CAPTURE'), sg.Checkbox("[1]", key=1, default=True), sg.Checkbox("[2]", key=2, default=True),
-     sg.Button('Capture', key='Capture')
+    [sg.Button('Initializing', key = 'TOGGLE AUTO CAPTURE'), *screen_checkboxes(), sg.Button('Capture', key='Capture')
      ],
-    [sg.Text('', size=(2, 2), key='timer'), sg.InputText(key="Rate", size = (5,1)), sg.Button('Capture Region', key='Capture Region'), sg.Checkbox("Paint", key='Viewer'), sg.Button("MoMo", key='MouseMover', visible=False)],
+    [sg.Text('', size=(2, 2), key='timer'), sg.InputText(key="Rate", size = (5,1)), sg.Button('Capture Region', key='Capture Region'),
+     sg.Checkbox("Paint", key='Viewer', default=True), sg.Button("Bird", key='MouseMover', visible=True)],
     [sg.Text(key="Last Image", size=(20, 1)),  sg.Checkbox("Colors", key="Colors", default=False)],
     [sg.Button('Exit', key='Exit')],
           ]
 
-    window = sg.Window("Activity Report", layout, keep_on_top=True, grab_anywhere=True, no_titlebar=True)
+    window = sg.Window("Activity Report", layout,
+                       keep_on_top=True,
+                       grab_anywhere=True,
+                       #no_titlebar=True,
+                       return_keyboard_events=True)
     last_capture = ""
     #Initializing Control
     control = Control()
     control.start()
     MouseMover = False
 
-    init = []
-    end = []
+    startMousePosition = []
+    endMousePosition = []
     capturing_region = False
     while True:
         timestamp = datetime.now()
@@ -135,8 +181,7 @@ def user_interface():
         if not capturing_region :
             event, inputs = window.Read(timeout=800) #Most of the time
         elif capturing_region:
-            event, inputs = window.Read(timeout=1) #We lower the timeout to avoid lag when getting Mouse coordinates while Capturing Region
-            
+            event, inputs = window.Read(1) #We lower the timeout to avoid lag when getting Mouse coordinates while Capturing Region
         if control.state:
             window['TOGGLE AUTO CAPTURE'].Update('Auto-capture : ON', button_color=("white", "green"))
             
@@ -159,32 +204,41 @@ def user_interface():
         elif event == "Capture Region":
             capturing_region= True
             window["Capture Region"].Update("Select region", button_color=("white", "orange"))
-                
+
+
+               
         if capturing_region:
-            if init == []:
+            if not startMousePosition:
                 step, value = get_region_to_capture()
                 if step == 'init':
-                    init = value
-                    end = []
-            elif init != []:
+                    startMousePosition = value
+                    endMousePosition = []
+            else:
                 step, value = get_region_to_capture()
                 if step == 'end':
-                    end = value
+                    endMousePosition = value
                     capturing_region= False
                     window["Capture Region"].Update("Capture Region",
                                                     button_color=sg.LOOK_AND_FEEL_TABLE[THEME]['BUTTON'])
-            else:
-                print("Where did you land man...?")
-        else:
-            pass
+
+        """if capturing_region:
+            if event.startswith('Mouse') and startMousePosition == []:
+                startMousePosition = get_mouse_position()
+                endMousePosition = []
+            elif event.startswith('Mouse'):
+                endMousePosition = get_mouse_position()
+                capturing_region= False
+                window["Capture Region"].Update("Capture Region",
+                                                    button_color=sg.LOOK_AND_FEEL_TABLE[THEME]['BUTTON'])"""
         
-        if init != [] and end != []:
-            bbox = init + end
-            (0, 0, 3840, 1080)
-            init = []
-            end = []
+        if startMousePosition != [] and endMousePosition != []:
+            screens = get_n_screens(inputs)
+            bbox = startMousePosition + endMousePosition
+            #(0, 0, 3840, 1080)
+            startMousePosition = []
+            endMousePosition = []
             time.sleep(1)
-            path_to_screenshot = capture(desktopPath, formatted_timestamp, region=bbox)
+            path_to_screenshot = capture(desktopPath, formatted_timestamp, region=bbox, screens=screens)
             if inputs['Viewer'] == True:
                 start_paint(path_to_screenshot)
             
@@ -194,12 +248,8 @@ def user_interface():
     #-------------- Capture every minute --------------------
         #if control.state and timestamp.second in [0, 10, 20, 30, 40, 50]: 
         if control.state and timestamp.second == 0:
-            screens = []
-            if inputs[1]:
-                screens.append(1)
-            if inputs[2]:
-                screens.append(2)
-                
+            screens = get_n_screens(inputs)
+
             if inputs["Colors"]:
                 last_capture = capture(f"screenshots/{Day}", formatted_timestamp, screens=screens)
             else:
@@ -219,15 +269,18 @@ def user_interface():
         else:
             window.Elem("MouseMover").Update(button_color=sg.LOOK_AND_FEEL_TABLE['SandyBeach']['BUTTON'])
 
-        if MouseMover and timestamp.second == 30:
-            move_mouse()
+            
+
+        if MouseMover and timestamp.second in [0, 30]:
+            start_bird()
 
     #---------------- Timer -----------------------------#
         window.Elem('timer').Update(timestamp.second)
         
     #-------------- Build Video ------------------------------
         if timestamp.hour == 18 and not os.path.isfile(f"./videos/{Day}.avi"):
-            make_video(Day)
+            pass
+            #make_video(Day)
     return window
 
 
