@@ -4,7 +4,7 @@ from PIL import ImageGrab
 import time
 import win32api
 import webbrowser
-from threading import Thread
+import threading
 from win32api import EnumDisplayMonitors
 
 import pyautogui as ag
@@ -17,7 +17,7 @@ from make_video import make_video
 import mytoolkit
 
 
-desktopPath = "C:/Users/DMHM6522/Desktop"
+desktopPath = "."
 
 MAX_SCREENSHOT_SIZE = 4000000 #600 Ko
 state_left = win32api.GetKeyState(0x01)  # Left button down = 0 or 1. Button up = -127 or -128
@@ -119,18 +119,24 @@ def login_screen(path:str)-> bool:
         return False
 
 def start_bird():
-    bird_thread = Thread(target=move_mouse).start()
-        
-def move_mouse():
-    
-    try:
-        bird_thread.join()
-    except Exception as err:
-        print(err)
-    webbrowser.open("homer's bird.gif")
-    webbrowser.open('notepad++')
-    time.sleep(5)
-    ag.write("Piou Piou", interval=0.5)
+    global MouseMover
+    bird_thread = threading.Thread(target=move_mouse, args =(lambda : MouseMover, ))
+    bird_thread.name = "Bird Thread"
+    bird_thread.start()
+
+def move_mouse(play):
+    #webbrowser.open("homer's bird.gif")
+    text = ""
+    with open('Text.txt') as f:
+        text = f.read()
+    webbrowser.open('notepad')
+    time.sleep(3)
+    while True:
+        for char in text:
+            ag.write(char)
+            time.sleep(.15)
+            if not play():
+                return   
     ag.press('space') 
     
 
@@ -168,6 +174,7 @@ def user_interface():
     #Initializing Control
     control = Control()
     control.start()
+    global MouseMover
     MouseMover = False
 
     startMousePosition = []
@@ -271,8 +278,10 @@ def user_interface():
 
             
 
-        if MouseMover and timestamp.second in [0, 30]:
-            start_bird()
+        if MouseMover and timestamp.second in [0, 30] :
+            if "Bird Thread" not in [t.name for t in threading.enumerate()]:
+                bird_thread = start_bird()
+                
 
     #---------------- Timer -----------------------------#
         window.Elem('timer').Update(timestamp.second)

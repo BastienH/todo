@@ -1,0 +1,1769 @@
+<?xml version="1.0"?>
+<workflow id="229">
+  <name>Copie de Aides de la DEE (2)</name>
+  <roles>
+    <role id="_lecteur">Lecteur</role>
+    <role id="_receiver">Destinataire</role>
+    <role id="_testeur">Testeur</role>
+  </roles><possible_status>
+    <status>
+      <id>just_submitted</id>
+      <name>Demande transmise</name>
+      <colour>FFFFFF</colour>
+      <visibility />
+      <items>
+        <item id="1" type="sendmail">
+          <to>
+            <item role_id="{{ form_var_email }}">{{ form_var_email }}</item>
+          </to><subject>Accus&#233; de r&#233;ception pour la demande de Prime {{ form_option_type_prime }} n&#176;{{ form_number }}.</subject>
+          <body>Bonjour,
+
+Votre demande pour la prime {{ form_option_type_prime }} n&#176;{{ form_number }} a bien &#233;t&#233; transmise.
+
+{% if form_user %}
+Vous pouvez `suivre l'&#233;volution de votre demande &lt;{{ form_url }}&gt;`_
+{% else %}
+{% if form_tracking_code %}
+Le code de suivi de votre demande est {{ form_tracking_code }}. 
+Vous seul connaissez ce code, conservez-le. 
+Il vous permet d'aller sur  `{% firstof global_title site_name site "Compte Citoyen" %} &lt;{{ portal_url }}&gt;`_  ({{ portal_url }}), 
+en bas de page, pour suivre son avancement.
+{% endif %}
+{% endif %}</body>
+        </item><item id="2" type="aggregationemail">
+          <to>
+            <item role_id="_receiver">_receiver</item>
+          </to>
+        </item><item id="3" type="jump">
+          <status>new</status>
+          <set_marker_on_status>False</set_marker_on_status>
+        </item><item id="4" type="set-backoffice-fields">
+          <label>Adresse finale</label>
+          <fields>
+            <field>
+              <field_id>bo668b70f5-6957-4e09-81f1-7f424813ba11</field_id>
+              <value>{% if form_var_UtiliserAdresseProfil == "Oui" %}{{form_user_var_numero_de_voie}} {{ form_user_var_address }} {{ form_user_var_zipcode }} {{ form_user_var_city }}{% elif form_var_address == None %}{{form_var_numero}} {{form_var_rue}} {{ form_var_code_postal }} {{form_var_ville}}{% else %}{{ form_var_adresse }}{% endif %}</value>
+            </field>
+          </fields>
+        </item><item id="5" type="geolocate">
+          <method>address_string</method>
+          <address_string>form_var_adresse_finale_usager</address_string>
+          <overwrite>True</overwrite>
+        </item>
+      </items>
+    </status><status>
+      <id>new</id>
+      <name>Analyse du dossier</name>
+      <colour>FFFF99</colour>
+      <visibility />
+      <items>
+        <item id="1" type="set-backoffice-fields">
+          <label>Montant</label>
+          <fields>
+            <field>
+              <field_id>bo54eafa96-bef7-4962-b44c-371c01b77125</field_id>
+              <value />
+            </field><field>
+              <field_id>bo27cc0c87-211b-4eec-8130-fb8dd44779d5</field_id>
+              <value />
+            </field>
+          </fields><condition>
+            <type>django</type>
+            <value>form_previous_status == "Cr&#233;ation GDA"</value>
+          </condition>
+        </item><item id="2" type="dispatch">
+          <role_key>_receiver</role_key>
+          <dispatch_type>manual</dispatch_type>
+          <role_id role_id="8de51e72574544cbba155160823bbcd7">Instructeurs Ecologie et Energie (DEE)</role_id>
+        </item><item id="3" type="commentable">
+          <label>Pr&#233;cisions pour l'usager devant &#233;diter son dossier</label>
+          <button_label />
+          <by>
+            <item role_id="_receiver">_receiver</item>
+          </by><varname>agent</varname>
+          <backoffice_info_text>&lt;p&gt;&lt;strong&gt;&amp;quot;Pr&amp;eacute;cisions pour l'usager devant &amp;eacute;diter son dossier&amp;quot;&lt;/strong&gt; : Si l'usager doit &amp;eacute;diter son dossier, d&amp;eacute;taill&amp;eacute;s dans ce champ libre les modifications requises, puis cliquer sur &amp;quot;Demander &amp;agrave; l'usager d'&amp;eacute;diter son dossier&amp;quot;.&lt;/p&gt;</backoffice_info_text>
+          <required>True</required>
+        </item><item id="4" type="sendmail">
+          <to>
+            <item role_id="_receiver">_receiver</item>
+          </to><subject>R&#233;ponse de l'Usager - n&#176;{{ form_number }} - {{ form_name }}</subject>
+          <body>Bonjour,
+
+{% if comment_usager %}
+L'usager a ajout&#233; le commentaire suivant &#224; {{ form_name }} n&#176;{{ form_number }} :
+
+{{ comment_usager }} 
+{% endif %}
+
+Vous pouvez `acc&#233;der &#224; la demande et la traiter &lt;{{ form_url_backoffice }}&gt;`_</body>
+          <condition>
+            <type>django</type>
+            <value>form_previous_status == "Edition du dossier" and comment_usager</value>
+          </condition>
+        </item><item id="5" type="commentable">
+          <label>Commentaire</label>
+          <button_label>Ajouter le commentaire</button_label>
+          <by>
+            <item role_id="_submitter">_submitter</item>
+          </by><varname>usager</varname>
+          <required>False</required>
+        </item><item id="6" type="choice">
+          <label>&#10004;&#65039; Valider la demande</label>
+          <by>
+            <item role_id="_receiver">_receiver</item>
+          </by><status>4</status>
+          <require_confirmation>True</require_confirmation>
+          <backoffice_info_text>&lt;p&gt;&amp;laquo;&lt;strong&gt; &lt;/strong&gt;&lt;strong&gt;Valider la demande&lt;/strong&gt;&lt;strong&gt;&amp;nbsp;&lt;/strong&gt;&amp;raquo; : Vous allez valider le dossier en cours d'instruction. Vous pourrez saisir le montant de la subvention &amp;agrave; l'&amp;eacute;tape suivante.&lt;/p&gt;
+
+&lt;p&gt;Apr&amp;egrave;s la saisie, le dossier sera ensuite automatiquement envoy&amp;eacute; au service Performance de la DEE pour proc&amp;eacute;der au versement de la subvention.&amp;nbsp;&lt;/p&gt;
+
+&lt;p&gt;Apr&amp;egrave;s validation par la performance, le dossier reviendra dans le service d'instruction pour consolider les montants vers&amp;eacute;s et archivage.&lt;/p&gt;</backoffice_info_text>
+          <ignore_form_errors>True</ignore_form_errors>
+          <set_marker_on_status>True</set_marker_on_status>
+        </item><item id="7" type="choice">
+          <label>&#10060; Refuser</label>
+          <by>
+            <item role_id="_receiver">_receiver</item>
+          </by><status>5</status>
+          <require_confirmation>True</require_confirmation>
+          <backoffice_info_text>&lt;p&gt;&amp;laquo; &lt;strong&gt;Refuser&lt;/strong&gt; &amp;raquo; : la demande n'est pas recevable, vous la rejetez. Vous pourrez motiver&amp;nbsp;le refus&amp;nbsp;aupr&amp;egrave;s de l'usager &amp;agrave; l'&amp;eacute;tape suivante&lt;/p&gt;</backoffice_info_text>
+          <ignore_form_errors>True</ignore_form_errors>
+          <set_marker_on_status>True</set_marker_on_status>
+        </item><item id="8" type="choice">
+          <label>&#10068; Demander &#224; l'usager d'&#233;diter son dossier</label>
+          <by>
+            <item role_id="_receiver">_receiver</item>
+          </by><status>0</status>
+          <require_confirmation>False</require_confirmation>
+          <backoffice_info_text>&lt;p&gt;&lt;strong&gt;&amp;laquo; Demander &amp;agrave; l'usager d'&amp;eacute;diter son dossier &amp;raquo; :&lt;/strong&gt; Il est indispensable de remplir le champ commentaire avant d'utiliser ce bouton. Le citoyen recevra le commentaire par courriel et verra dans le journal de la demande que vous avez besoin d'une information compl&amp;eacute;mentaire concernant sa demande. Il aura alors la possibilit&amp;eacute; de remplir un champ d'information et d'&amp;eacute;diter sa demande&lt;/p&gt;</backoffice_info_text>
+          <ignore_form_errors>False</ignore_form_errors>
+          <set_marker_on_status>True</set_marker_on_status>
+        </item><item id="9" type="displaymsg">
+          <message>Si vous avez besoin d'&#233;diter votre dossier, ajoutez un commentaire pour que nos services vous redonnent la main.</message>
+          <level>info</level>
+          <position>bottom</position>
+          <to>
+            <item role_id="_submitter">_submitter</item>
+          </to>
+        </item>
+      </items>
+    </status><status>
+      <id>0</id>
+      <name>Edition du dossier</name>
+      <colour>FF6600</colour>
+      <visibility />
+      <items>
+        <item id="1" type="sendmail">
+          <to>
+            <item role_id="{{ form_var_email }}">{{ form_var_email }}</item>
+          </to><subject>Prime {{ form_option_type_prime }} - Compl&#233;ment d'information n&#233;cessaire pour votre demande</subject>
+          <body>Bonjour,
+
+Une information compl&#233;mentaire est n&#233;cessaire concernant votre demande de prime {{ form_option_type_prime }}, n&#176; {{ form_number }}.
+
+{% if comment_agent %}
+Le commentaire suivant vous est adress&#233; :
+
+{{ comment_agent }}
+{% endif %}
+
+Vous pouvez, pour compl&#233;ter la demande,  {% if form_user %} `la consulter en ligne &lt;{{ form_url }}&gt;`_  {% else %}{% if form_tracking_code %} copier votre code de suivi : {{ form_tracking_code }}, 
+et l'utiliser en bas de la page des d&#233;marches :`{% firstof global_title site_name site "Compte Citoyen" %} &lt;{{ portal_url }}&gt;`_  ({{ portal_url }}). {% endif %}{% endif %}</body>
+        </item><item id="2" type="editable">
+          <by>
+            <item role_id="_submitter">_submitter</item>
+          </by><status>new</status>
+          <label>&#10000; Editer la demande</label>
+          <backoffice_info_text>&lt;p&gt;&lt;strong&gt;&amp;quot;Editer la demande&amp;quot; &lt;/strong&gt;: Ce bouton vous permet de revoir votre demande initiale, pour remplacer des documents ou corriger les informations fournies.&lt;br /&gt;
+Apr&amp;egrave;s avoir &lt;em&gt;Enregistrer vos changements&lt;/em&gt;&lt;strong&gt; &lt;/strong&gt;(sur la derni&amp;egrave;re page du formulaire), votre demande sera automatiquement renvoyer au service instructeur.&amp;nbsp;&lt;/p&gt;</backoffice_info_text>
+          <condition>
+            <type>django</type>
+            <value>form_previous_status == "Analyse du dossier"</value>
+          </condition>
+        </item><item id="3" type="commentable">
+          <label>Commentaire</label>
+          <button_label>Ajouter le commentaire</button_label>
+          <by>
+            <item role_id="_submitter">_submitter</item>
+          </by><varname>usager</varname>
+          <required>False</required>
+        </item><item id="4" type="jump">
+          <status>0</status>
+          <timeout>1296000</timeout>
+          <set_marker_on_status>False</set_marker_on_status>
+        </item><item id="5" type="displaymsg">
+          <message>Le bouton "&#10000; Editer la demande" ci-dessous vous permet de corriger des informations ou modifier des pi&#232;ces jointes. 
+</message>
+          <level>info</level>
+          <position>bottom</position>
+          <to>
+            <item role_id="_submitter">_submitter</item>
+          </to>
+        </item><item id="6" type="choice">
+          <label>Reprendre l'analyse du dossier</label>
+          <by>
+            <item role_id="_receiver">_receiver</item>
+          </by><status>_previous</status>
+          <require_confirmation>False</require_confirmation>
+          <backoffice_info_text>&lt;p&gt;&lt;strong&gt;&amp;quot;Reprendre l'analyse du dossier&amp;quot; :&amp;nbsp;&lt;/strong&gt;Permet de changer le statut &amp;agrave; &amp;quot;Analyse en cours&amp;quot;.&amp;nbsp;&lt;/p&gt;</backoffice_info_text>
+          <ignore_form_errors>False</ignore_form_errors>
+          <set_marker_on_status>False</set_marker_on_status>
+        </item><item id="7" type="addattachment">
+          <by>
+            <item role_id="_submitter">_submitter</item>
+          </by><required>False</required>
+          <title>Transf&#233;rer un fichier</title>
+          <display_title>True</display_title>
+          <button_label>Transf&#233;rer un fichier</button_label>
+          <display_button>True</display_button>
+          <backoffice_filefield_id>bo16ae28c6-5de7-46e1-abbc-d623d9fb734b</backoffice_filefield_id>
+          <varname>fichier_complementaire</varname>
+          <attach_to_history>True</attach_to_history>
+          <max_file_size>5 Mo</max_file_size>
+          <push_to_portfolio>False</push_to_portfolio>
+          <condition>
+            <type>django</type>
+            <value>form_previous_status == "Cr&#233;ation GDA"</value>
+          </condition>
+        </item><item id="8" type="choice">
+          <label>&#9993;&#65039; Renvoyer le dossier</label>
+          <by>
+            <item role_id="_submitter">_submitter</item>
+          </by><status>_previous</status>
+          <require_confirmation>False</require_confirmation>
+          <ignore_form_errors>False</ignore_form_errors>
+          <set_marker_on_status>False</set_marker_on_status>
+        </item>
+      </items>
+    </status><status>
+      <id>4</id>
+      <name>Saisie</name>
+      <colour>FFFFFF</colour>
+      <visibility>
+        <role>_receiver</role>
+        <role>_testeur</role>
+        <role>_lecteur</role>
+      </visibility><items>
+        <item id="1" type="form">
+          <by>
+            <item role_id="_receiver">_receiver</item>
+          </by><varname>validation</varname>
+          <formdef>
+            <name>-</name>
+            <fields>
+              <field>
+                <label>Saisie pour validation sur la base de la facture</label>
+                <type>title</type>
+                <id>4</id>
+              </field><field>
+                <label>Le demandeur a fourni :</label>
+                <type>item</type>
+                <condition>
+                  <type>django</type>
+                  <value>form_option_devis_autorise == True</value>
+                </condition><required>True</required>
+                <varname>type_justificatif</varname>
+                <prefill>
+                  <type>none</type>
+                </prefill><items>
+                  <item>la facture</item>
+                  <item>un devis</item>
+                </items><display_mode>radio</display_mode>
+                <in_filters>False</in_filters>
+                <anonymise>False</anonymise>
+                <display_disabled_items>False</display_disabled_items>
+                <id>6</id>
+              </field><field>
+                <label>Montant total de la facture ou devis pris en compte</label>
+                <type>string</type>
+                <required>True</required>
+                <hint>Ne saisir que des chiffres, utiliser une virgule pour les centimes : Exemple: 150,80</hint>
+                <varname>montant_total_facture</varname>
+                <prefill>
+                  <type>none</type>
+                </prefill><anonymise>False</anonymise>
+                <id>3</id>
+              </field><field>
+                <label>Montant de la subvention totale</label>
+                <type>string</type>
+                <required>True</required>
+                <hint>Ne saisir que des chiffres, utiliser une virgule pour les centimes : Exemple: 150,80</hint>
+                <varname>montant_total_subvention</varname>
+                <display_locations>
+                  <display_location>validation</display_location>
+                  <display_location>summary</display_location>
+                </display_locations><prefill>
+                  <type>none</type>
+                </prefill><anonymise>False</anonymise>
+                <id>1</id>
+              </field><field>
+                <label>&lt;p&gt;Pourcentage de la prime :&amp;nbsp;{{ validation_var_montant_total_subvention|decimal|divide:validation_var_montant_total_facture|decimal:2|multiply:100}} %&lt;/p&gt;</label>
+                <type>comment</type>
+                <id>9</id>
+              </field><field>
+                <label>&lt;p&gt;La subvention doit &amp;ecirc;tre inferieur au plafond&lt;/p&gt;</label>
+                <type>comment</type>
+                <condition>
+                  <type>django</type>
+                  <value>validation_var_montant_total_subvention|decimal &gt; form_option_montant_subvention_maximale|decimal</value>
+                </condition><extra_css_class>pk-error</extra_css_class>
+                <display_locations />
+                <id>2</id>
+              </field>
+            </fields>
+          </formdef>
+        </item><item id="2" type="jumponsubmit">
+          <status>2</status>
+          <set_marker_on_status>True</set_marker_on_status>
+          <condition>
+            <type>python</type>
+            <value>form_option_enveloppe_epuisee == True</value>
+          </condition>
+        </item><item id="3" type="jumponsubmit">
+          <status>7</status>
+          <set_marker_on_status>True</set_marker_on_status>
+          <condition>
+            <type>django</type>
+            <value>validation_var_type_justificatif == "un devis" and validation_var_montant_total_subvention|decimal &lt;= form_option_montant_subvention_maximale|decimal and validation_var_montant_total_subvention|decimal &lt;= validation_var_montant_total_facture|decimal</value>
+          </condition>
+        </item><item id="4" type="jumponsubmit">
+          <status>accepted</status>
+          <set_marker_on_status>False</set_marker_on_status>
+          <condition>
+            <type>django</type>
+            <value>validation_var_montant_total_subvention|decimal &lt;= form_option_montant_subvention_maximale|decimal and validation_var_montant_total_subvention|decimal &lt;= validation_var_montant_total_facture|decimal</value>
+          </condition>
+        </item><item id="5" type="choice">
+          <label>Retour &#224; "Analyse En Cours"</label>
+          <by>
+            <item role_id="_receiver">_receiver</item>
+          </by><status>_previous</status>
+          <require_confirmation>True</require_confirmation>
+          <ignore_form_errors>True</ignore_form_errors>
+          <set_marker_on_status>False</set_marker_on_status>
+        </item><item id="6" type="jump">
+          <status>_previous</status>
+          <timeout>28800</timeout>
+          <set_marker_on_status>False</set_marker_on_status>
+        </item>
+      </items>
+    </status><status>
+      <id>7</id>
+      <name>Devis valid&#233;</name>
+      <colour>99FF99</colour>
+      <visibility />
+      <items>
+        <item id="1" type="sendmail">
+          <to>
+            <item role_id="bastien.harkins@externe.toulouse-metropole.fr">bastien.harkins@externe.toulouse-metropole.fr</item>
+          </to><subject>Demande accept&#233;e pour la Prime {{ form_option_type_prime }}, n&#176;{{ form_number }}.</subject>
+          <body>Bonjour,
+
+Sur la base du dossier fourni et sous r&#233;serve de pr&#233;senter la facture finale, votre demande a &#233;t&#233; accept&#233;e.
+
+Le montant &#233;ligible de votre Prime {{ form_option_type_prime }} est de {{ form_var_montant_total_subvention }}&#8364;.
+
+Lorsque vous aurez la facture, vous pourrez la joindre &#224; votre demande, et renvoyer le dossier pour terminer l'instruction et proc&#233;der au versement de la prime.
+
+{% if form_user %}
+Vous pouvez `suivre l'&#233;volution de votre demande &lt;{{ form_url }}&gt;`_
+{% else %}
+{% if form_tracking_code %}
+Le code de suivi de votre demande est {{ form_tracking_code }}. Vous seul connaissez ce code, conservez-le. 
+Il vous permet d'aller sur  `{% firstof global_title site_name site "Compte Citoyen" %} &lt;{{ portal_url }}&gt;`_  ({{ portal_url }}), en bas &#224; gauche, pour suivre son avancement.
+{% endif %}
+{% endif %}</body>
+          <condition>
+            <type>django</type>
+            <value>form_previous_status == "Saisie"</value>
+          </condition>
+        </item><item id="2" type="sendmail">
+          <to>
+            <item role_id="bastien.harkins@externe.toulouse-metropole.fr">bastien.harkins@externe.toulouse-metropole.fr</item>
+          </to><subject>Demande suspendue, n&#176;{{form_number}}</subject>
+          <body>{{comment_agent_sur_facture}}</body>
+          <condition>
+            <type>django</type>
+            <value>form_previous_status == "Controle de la facture"</value>
+          </condition>
+        </item><item id="3" type="set-backoffice-fields">
+          <label>Montant</label>
+          <fields>
+            <field>
+              <field_id>bo54eafa96-bef7-4962-b44c-371c01b77125</field_id>
+              <value>{{ validation_var_montant_total_subvention|decimal }}</value>
+            </field><field>
+              <field_id>bo27cc0c87-211b-4eec-8130-fb8dd44779d5</field_id>
+              <value>{{ validation_var_montant_total_facture|decimal }}</value>
+            </field>
+          </fields>
+        </item><item id="4" type="commentable">
+          <label>Commentaire</label>
+          <button_label>Ajouter le commentaire</button_label>
+          <by>
+            <item role_id="_submitter">_submitter</item>
+            <item role_id="_receiver">_receiver</item>
+          </by><required>False</required>
+        </item><item id="5" type="addattachment">
+          <by>
+            <item role_id="_submitter">_submitter</item>
+          </by><required>True</required>
+          <title>Joindre le justificatif</title>
+          <display_title>True</display_title>
+          <display_button>False</display_button>
+          <backoffice_filefield_id>bo2a115ec9-fa02-44d7-aaea-f7b51d417ff8</backoffice_filefield_id>
+          <attach_to_history>True</attach_to_history>
+          <push_to_portfolio>False</push_to_portfolio>
+        </item><item id="6" type="choice">
+          <label>&#9993;&#65039; Envoyer le dossier compl&#233;t&#233;</label>
+          <by>
+            <item role_id="_submitter">_submitter</item>
+          </by><status>8</status>
+          <require_confirmation>False</require_confirmation>
+          <ignore_form_errors>True</ignore_form_errors>
+          <set_marker_on_status>False</set_marker_on_status>
+          <condition>
+            <type>django</type>
+            <value>form_var_facture_suite_devis</value>
+          </condition>
+        </item><item id="7" type="form">
+          <formdef>
+            <name>-</name>
+            <fields>
+              <field>
+                <label>Facture</label>
+                <type>file</type>
+                <required>True</required>
+                <display_locations>
+                  <display_location>validation</display_location>
+                  <display_location>summary</display_location>
+                </display_locations><allow_portfolio_picking>False</allow_portfolio_picking>
+                <automatic_image_resize>False</automatic_image_resize>
+                <storage>default</storage>
+                <id>2</id>
+              </field><field>
+                <label>Pi&#232;ce compl&#233;mentaire (optionnelle)</label>
+                <type>file</type>
+                <required>True</required>
+                <display_locations>
+                  <display_location>validation</display_location>
+                  <display_location>summary</display_location>
+                </display_locations><allow_portfolio_picking>False</allow_portfolio_picking>
+                <automatic_image_resize>False</automatic_image_resize>
+                <storage>default</storage>
+                <id>3</id>
+              </field><field>
+                <label>Vehicules mis au rebus 1</label>
+                <type>block:vehicule_mis_au_rebus_pro</type>
+                <required>True</required>
+                <display_locations>
+                  <display_location>validation</display_location>
+                  <display_location>summary</display_location>
+                </display_locations><max_items>1</max_items>
+                <label_display>normal</label_display>
+                <id>1</id>
+              </field>
+            </fields>
+          </formdef>
+        </item>
+      </items>
+    </status><status>
+      <id>8</id>
+      <name>Controle du dossier compl&#233;t&#233;</name>
+      <colour>FFFF00</colour>
+      <visibility />
+      <items>
+        <item id="1" type="commentable">
+          <label>Commentaire</label>
+          <button_label />
+          <by>
+            <item role_id="_receiver">_receiver</item>
+          </by><varname>agent_sur_facture</varname>
+          <required>True</required>
+        </item><item id="2" type="choice">
+          <label>&#10060; Justificatif invalide</label>
+          <by>
+            <item role_id="_receiver">_receiver</item>
+          </by><status>7</status>
+          <require_confirmation>False</require_confirmation>
+          <backoffice_info_text>&lt;p&gt;&lt;strong&gt;&#10060; Justificatif invalide&lt;/strong&gt; : La pi&amp;egrave;ce fournie n'est pas conforme au devis ayant &amp;eacute;t&amp;eacute; valid&amp;eacute;. Le demandeur est invit&amp;eacute; &amp;agrave; pr&amp;eacute;senter&amp;nbsp;un autre justificatif.&lt;/p&gt;</backoffice_info_text>
+          <ignore_form_errors>False</ignore_form_errors>
+          <set_marker_on_status>False</set_marker_on_status>
+        </item><item id="3" type="choice">
+          <label>&#10004;&#65039; Valider</label>
+          <by>
+            <item role_id="_receiver">_receiver</item>
+          </by><status>accepted</status>
+          <require_confirmation>True</require_confirmation>
+          <backoffice_info_text>&lt;p&gt;&lt;strong&gt;Valider&lt;/strong&gt;&amp;nbsp;: La demande est envoy&amp;eacute; au service de la performance pour contr&amp;ocirc;le et paiement&lt;/p&gt;</backoffice_info_text>
+          <ignore_form_errors>True</ignore_form_errors>
+          <set_marker_on_status>False</set_marker_on_status>
+        </item>
+      </items>
+    </status><status>
+      <id>accepted</id>
+      <name>Demande valid&#233;e. Etape 1/2</name>
+      <colour>99FF99</colour>
+      <visibility />
+      <items>
+        <item id="1" type="set-backoffice-fields">
+          <label>Montant</label>
+          <fields>
+            <field>
+              <field_id>bo54eafa96-bef7-4962-b44c-371c01b77125</field_id>
+              <value>{{ validation_var_montant_total_subvention|decimal }}</value>
+            </field><field>
+              <field_id>bo27cc0c87-211b-4eec-8130-fb8dd44779d5</field_id>
+              <value>{{ validation_var_montant_total_facture|decimal }}</value>
+            </field>
+          </fields>
+        </item><item id="2" type="sendmail">
+          <to>
+            <item role_id="{{ form_var_email }}">{{ form_var_email }}</item>
+          </to><subject>Demande accept&#233;e pour la Prime {{ form_option_type_prime }}, n&#176;{{ form_number }}.</subject>
+          <body>Bonjour,
+
+Votre demande a &#233;t&#233; accept&#233;e.
+
+Le montant de votre Prime {{ form_option_type_prime }} est de {{ form_var_montant_total_subvention }}&#8364;.
+
+Nos services proc&#233;deront &#224; la v&#233;rification des informations bancaires fournies.
+Vous serez notifi&#233; lorsque la v&#233;rification aura aboutie.
+
+Si les informations de paiement ne sont pas valides, nos services vous recontacterons pour les mettre &#224; jour.
+
+{% if form_user %}
+Vous pouvez `suivre l'&#233;volution de votre demande &lt;{{ form_url }}&gt;`_
+{% else %}
+{% if form_tracking_code %}
+Le code de suivi de votre demande est {{ form_tracking_code }}. Vous seul connaissez ce code, conservez-le. 
+Il vous permet d'aller sur  `{% firstof global_title site_name site "Compte Citoyen" %} &lt;{{ portal_url }}&gt;`_  ({{ portal_url }}), en bas &#224; gauche, pour suivre son avancement.
+{% endif %}
+{% endif %}</body>
+        </item><item id="3" type="commentable">
+          <label>Commentaire</label>
+          <button_label />
+          <by>
+            <item role_id="_receiver">_receiver</item>
+          </by><varname>agent2</varname>
+          <required>False</required>
+        </item><item id="4" type="dispatch">
+          <role_key>_receiver</role_key>
+          <dispatch_type>manual</dispatch_type>
+          <role_id role_id="0e97f264ddce499aaecc13c11d045914">Instructeurs Performance DEE</role_id>
+        </item><item id="5" type="dispatch">
+          <role_key>_lecteur</role_key>
+          <dispatch_type>manual</dispatch_type>
+          <role_id role_id="8de51e72574544cbba155160823bbcd7">Instructeurs Ecologie et Energie (DEE)</role_id>
+        </item><item id="6" type="export_to_model">
+          <model_file>
+            <base_filename>mod&#232;le_recap_GDA.odt</base_filename>
+            <content_type>application/vnd.oasis.opendocument.text</content_type>
+            <b64_content>UEsDBBQAAAgAABNFSFFexjIMJwAAACcAAAAIAAAAbWltZXR5cGVhcHBsaWNhdGlvbi92bmQub2Fz
+aXMub3BlbmRvY3VtZW50LnRleHRQSwMEFAAACAAAE0VIUQAAAAAAAAAAAAAAABgAAABDb25maWd1
+cmF0aW9uczIvZmxvYXRlci9QSwMEFAAICAgAE0VIUQAAAAAAAAAAAAAAACcAAABDb25maWd1cmF0
+aW9uczIvYWNjZWxlcmF0b3IvY3VycmVudC54bWwDAFBLBwgAAAAAAgAAAAAAAABQSwMEFAAACAAA
+E0VIUQAAAAAAAAAAAAAAAB8AAABDb25maWd1cmF0aW9uczIvaW1hZ2VzL0JpdG1hcHMvUEsDBBQA
+AAgAABNFSFEAAAAAAAAAAAAAAAAYAAAAQ29uZmlndXJhdGlvbnMyL21lbnViYXIvUEsDBBQAAAgA
+ABNFSFEAAAAAAAAAAAAAAAAcAAAAQ29uZmlndXJhdGlvbnMyL3Byb2dyZXNzYmFyL1BLAwQUAAAI
+AAATRUhRAAAAAAAAAAAAAAAAGgAAAENvbmZpZ3VyYXRpb25zMi9wb3B1cG1lbnUvUEsDBBQAAAgA
+ABNFSFEAAAAAAAAAAAAAAAAYAAAAQ29uZmlndXJhdGlvbnMyL3Rvb2xiYXIvUEsDBBQAAAgAABNF
+SFEAAAAAAAAAAAAAAAAaAAAAQ29uZmlndXJhdGlvbnMyL3N0YXR1c2Jhci9QSwMEFAAACAAAE0VI
+UQAAAAAAAAAAAAAAABoAAABDb25maWd1cmF0aW9uczIvdG9vbHBhbmVsL1BLAwQUAAAIAAATRUhR
+8hfXawIJAAACCQAAGAAAAFRodW1ibmFpbHMvdGh1bWJuYWlsLnBuZ4lQTkcNChoKAAAADUlIRFIA
+AAC1AAABAAgCAAAAekGgjAAACMlJREFUeJzt3D124mgahuE36H1MIingsILucCI1CVGlswRNUplD
+skqK0JNV6ohEoxV4B30I9GkvNd8fvxZPgbCr7Zr7OqddZRAS1dwG9Frit+/fvxtwwW9/9x3Au0Yf
+UOgDCn1AoQ8o9AGFPqDQBxT6gEIfUOgDCn1AoQ8o9AGFPqDQBxT6gDKpj6HrnFlZmnN1XQ/DUBTF
+2RLDYP6y+LWIy5d1XYyurOu6siz3a+i64dKSI3fkZDN4fRP6GNatNU3tH1fr+8534h9U1/ZW+W/n
+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
+4eZIB4u7gno1XzwM74cupQO1JbwE6i7JxT9nksCJluUx3ZdcvwrMGgKqrzdixqT6PeSKoF6xee49
+4LRUj0v1oJ0oHAj025I7x9x6qMcnJc9+eKTWO91CkkdjBtJhA614hUhrwZCa0Tsb80iu78XX6/Ya
+YAidWkiLgvJtTaN5yPXHhqr5cz4V0NLaLwTUWwXIpCGyBHvbtAdv4xN4t/u9RZEF3gBT7/5PUyoa
+qW/zlnBsWwR1EGpCQug+Ufm+nj+NrrBWAQBKxDiFleDa1YxLjqn0+lecI9ebw11Kd5DXBo09XfZe
+2038oQwfm7WoG5v2c5CaQZDCijNYLOAE+9wqsQ+naEdg5Zpf8QSLYIAHx+p9cogFR/8rhTTONiFg
+xjnkqnXC48/t459+Uv1pof957lcAQ+60i0oIVk9s+ofvrtQZPBfUBt55pNWEDItGRqOtHlSSLr6S
+uTY7EeoEfE+8P/yB9bv/A1BLBwgPakE7QAgAAKAtAABQSwMEFAAICAgAE0VIUQAAAAAAAAAAAAAA
+AAwAAABtYW5pZmVzdC5yZGbNk81ugzAQhO88hWXO2EAvBQVyKMq5ap/ANYZYBS/ymhLevo6TVlGk
+quqf1OOuRjPfjrSb7WEcyIuyqMFUNGMpJcpIaLXpKzq7Lrml2zra2LYrH5od8WqDpZ8qunduKjlf
+loUtNwxsz7OiKHia8zxPvCLB1ThxSAzGtI4ICR6NQmn15HwaOc7iCWZXUXTroJB59yA9i906qaCy
+CmG2Ur2HtiCRgUCNCUzKhHSDHLpOS8UzlvNROcGh7eLHYL3Tg6I8YPArjs/Y3ogMpuVe4L2w7lyD
+33yVaHruY3p108Xx3yOUYJwy7k/quzt5/+f+Ls//GeKvtHZEbEDOo2f6kOe08h9VR69QSwcItPdo
+0gUBAACDAwAAUEsDBBQAAAgAABNFSFHilx8OKwQAACsEAAAIAAAAbWV0YS54bWw8P3htbCB2ZXJz
+aW9uPSIxLjAiIGVuY29kaW5nPSJVVEYtOCI/Pgo8b2ZmaWNlOmRvY3VtZW50LW1ldGEgeG1sbnM6
+b2ZmaWNlPSJ1cm46b2FzaXM6bmFtZXM6dGM6b3BlbmRvY3VtZW50OnhtbG5zOm9mZmljZToxLjAi
+IHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB4bWxuczpkYz0iaHR0
+cDovL3B1cmwub3JnL2RjL2VsZW1lbnRzLzEuMS8iIHhtbG5zOm1ldGE9InVybjpvYXNpczpuYW1l
+czp0YzpvcGVuZG9jdW1lbnQ6eG1sbnM6bWV0YToxLjAiIHhtbG5zOm9vbz0iaHR0cDovL29wZW5v
+ZmZpY2Uub3JnLzIwMDQvb2ZmaWNlIiB4bWxuczpncmRkbD0iaHR0cDovL3d3dy53My5vcmcvMjAw
+My9nL2RhdGEtdmlldyMiIHhtbG5zOnRleHRvb289Imh0dHA6Ly9vcGVub2ZmaWNlLm9yZy8yMDEz
+L29mZmljZSIgb2ZmaWNlOnZlcnNpb249IjEuMiI+PG9mZmljZTptZXRhPjxtZXRhOmluaXRpYWwt
+Y3JlYXRvcj5CYXN0aWVuIEhhcmtpbnM8L21ldGE6aW5pdGlhbC1jcmVhdG9yPjxtZXRhOmNyZWF0
+aW9uLWRhdGU+MjAyMC0xMC0wOFQwOTo0NzozOC44NzwvbWV0YTpjcmVhdGlvbi1kYXRlPjxkYzpk
+YXRlPjIwMjAtMTAtMDhUMTA6NDA6MzguNjc8L2RjOmRhdGU+PGRjOmNyZWF0b3I+QmFzdGllbiBI
+YXJraW5zPC9kYzpjcmVhdG9yPjxtZXRhOmVkaXRpbmctZHVyYXRpb24+UFQ1M008L21ldGE6ZWRp
+dGluZy1kdXJhdGlvbj48bWV0YTplZGl0aW5nLWN5Y2xlcz4yPC9tZXRhOmVkaXRpbmctY3ljbGVz
+PjxtZXRhOmdlbmVyYXRvcj5PcGVuT2ZmaWNlLzQuMS43JFdpbjMyIE9wZW5PZmZpY2Uub3JnX3By
+b2plY3QvNDE3bTEkQnVpbGQtOTgwMDwvbWV0YTpnZW5lcmF0b3I+PG1ldGE6ZG9jdW1lbnQtc3Rh
+dGlzdGljIG1ldGE6dGFibGUtY291bnQ9IjAiIG1ldGE6aW1hZ2UtY291bnQ9IjAiIG1ldGE6b2Jq
+ZWN0LWNvdW50PSIwIiBtZXRhOnBhZ2UtY291bnQ9IjEiIG1ldGE6cGFyYWdyYXBoLWNvdW50PSI2
+IiBtZXRhOndvcmQtY291bnQ9IjM3IiBtZXRhOmNoYXJhY3Rlci1jb3VudD0iMjM0Ii8+PC9vZmZp
+Y2U6bWV0YT48L29mZmljZTpkb2N1bWVudC1tZXRhPlBLAwQUAAgICAATRUhRAAAAAAAAAAAAAAAA
+FQAAAE1FVEEtSU5GL21hbmlmZXN0LnhtbK2UwW7DIAyG732KiOsU2HqaUNMeJu0JugdgxEmRwERg
+qvbtRyqlybZ0WqrebMv+vx+D2OxOzhZHCNF4rNgLf2YFoPa1wbZiH/v38pXttquNU2gaiCSHoMhz
+GK9pxVJA6VU0UaJyECVp6TvA2uvkAEl+75cX0jWbGFiz7aoYeY2xUOb5cB67HdRGlXTuoGKq66zR
+ivK0OGLNLxb4lMwJTnSLNZabZG3ZKTpUTDCxyMO8ypvHxrQpXLzFtVBag4Wc+iB0CqG3lpeykPXz
+vDFhr8KT4XoK/J+nhXDjVAuiw3ZefX9I7hOVsVHQEPK+exmlvy/Rb2YWkk9J963ub90IRPnRx8cL
+09nCPbLTqw5183STMNR47nqodQekBuMb8esP2H4BUEsHCLlq0qAiAQAAPgQAAFBLAQIUABQAAAgA
+ABNFSFFexjIMJwAAACcAAAAIAAAAAAAAAAAAAAAAAAAAAABtaW1ldHlwZVBLAQIUABQAAAgAABNF
+SFEAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAE0AAABDb25maWd1cmF0aW9uczIvZmxvYXRlci9Q
+SwECFAAUAAgICAATRUhRAAAAAAIAAAAAAAAAJwAAAAAAAAAAAAAAAACDAAAAQ29uZmlndXJhdGlv
+bnMyL2FjY2VsZXJhdG9yL2N1cnJlbnQueG1sUEsBAhQAFAAACAAAE0VIUQAAAAAAAAAAAAAAAB8A
+AAAAAAAAAAAAAAAA2gAAAENvbmZpZ3VyYXRpb25zMi9pbWFnZXMvQml0bWFwcy9QSwECFAAUAAAI
+AAATRUhRAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAXAQAAQ29uZmlndXJhdGlvbnMyL21lbnVi
+YXIvUEsBAhQAFAAACAAAE0VIUQAAAAAAAAAAAAAAABwAAAAAAAAAAAAAAAAATQEAAENvbmZpZ3Vy
+YXRpb25zMi9wcm9ncmVzc2Jhci9QSwECFAAUAAAIAAATRUhRAAAAAAAAAAAAAAAAGgAAAAAAAAAA
+AAAAAACHAQAAQ29uZmlndXJhdGlvbnMyL3BvcHVwbWVudS9QSwECFAAUAAAIAAATRUhRAAAAAAAA
+AAAAAAAAGAAAAAAAAAAAAAAAAAC/AQAAQ29uZmlndXJhdGlvbnMyL3Rvb2xiYXIvUEsBAhQAFAAA
+CAAAE0VIUQAAAAAAAAAAAAAAABoAAAAAAAAAAAAAAAAA9QEAAENvbmZpZ3VyYXRpb25zMi9zdGF0
+dXNiYXIvUEsBAhQAFAAACAAAE0VIUQAAAAAAAAAAAAAAABoAAAAAAAAAAAAAAAAALQIAAENvbmZp
+Z3VyYXRpb25zMi90b29scGFuZWwvUEsBAhQAFAAACAAAE0VIUfIX12sCCQAAAgkAABgAAAAAAAAA
+AAAAAAAAZQIAAFRodW1ibmFpbHMvdGh1bWJuYWlsLnBuZ1BLAQIUABQACAgIABNFSFGyE2M8NQQA
+AGYUAAALAAAAAAAAAAAAAAAAAJ0LAABjb250ZW50LnhtbFBLAQIUABQACAgIABNFSFGA0x7EOQUA
+AFshAAAMAAAAAAAAAAAAAAAAAAsQAABzZXR0aW5ncy54bWxQSwECFAAUAAgICAATRUhRD2pBO0AI
+AACgLQAACgAAAAAAAAAAAAAAAAB+FQAAc3R5bGVzLnhtbFBLAQIUABQACAgIABNFSFG092jSBQEA
+AIMDAAAMAAAAAAAAAAAAAAAAAPYdAABtYW5pZmVzdC5yZGZQSwECFAAUAAAIAAATRUhR4pcfDisE
+AAArBAAACAAAAAAAAAAAAAAAAAA1HwAAbWV0YS54bWxQSwECFAAUAAgICAATRUhRuWrSoCIBAAA+
+BAAAFQAAAAAAAAAAAAAAAACGIwAATUVUQS1JTkYvbWFuaWZlc3QueG1sUEsFBgAAAAARABEAcAQA
+AOskAAAAAA==
+</b64_content>
+          </model_file><convert_to_pdf>True</convert_to_pdf>
+          <backoffice_filefield_id>bof2fd7323-1e33-42dc-865f-385ec756fefe</backoffice_filefield_id>
+          <attach_to_history>False</attach_to_history>
+          <varname>recap_tresor</varname>
+          <push_to_portfolio>False</push_to_portfolio>
+          <method>non-interactive</method>
+          <by>
+            <item role_id="_receiver">_receiver</item>
+          </by><filename>R&#233;cap_{{ form_number }}_{{ form_var_nom }}_{{ form_var_prenom }}</filename>
+        </item><item id="7" type="jump">
+          <status>3</status>
+          <set_marker_on_status>False</set_marker_on_status>
+        </item>
+      </items>
+    </status><status>
+      <id>5</id>
+      <name>Motif de refus</name>
+      <colour>FFFFFF</colour>
+      <visibility>
+        <role>_receiver</role>
+        <role>_testeur</role>
+        <role>_lecteur</role>
+      </visibility><items>
+        <item id="1" type="commentable">
+          <label>Motif du refus</label>
+          <button_label>Confirmer</button_label>
+          <hint>Ce motif sera envoy&#233; &#224; l'usager, soyez poli, factuel, &#233;vitez les erreurs d'orthographe</hint>
+          <by>
+            <item role_id="_receiver">_receiver</item>
+          </by><varname>motif_refus</varname>
+          <required>True</required>
+        </item><item id="2" type="jumponsubmit">
+          <status>rejected</status>
+          <set_marker_on_status>True</set_marker_on_status>
+        </item><item id="3" type="jump">
+          <status>_previous</status>
+          <timeout>28800</timeout>
+          <set_marker_on_status>False</set_marker_on_status>
+        </item><item id="4" type="choice">
+          <label>Retour &#224; "Analyse En Cours"</label>
+          <by>
+            <item role_id="_receiver">_receiver</item>
+          </by><status>new</status>
+          <require_confirmation>False</require_confirmation>
+          <ignore_form_errors>True</ignore_form_errors>
+          <set_marker_on_status>False</set_marker_on_status>
+        </item>
+      </items>
+    </status><status>
+      <id>rejected</id>
+      <name>Demande non &#233;ligible</name>
+      <colour>000000</colour>
+      <forced_endpoint>true</forced_endpoint>
+      <visibility />
+      <items>
+        <item id="1" type="sendmail">
+          <to>
+            <item role_id="{{ form_var_email }}">{{ form_var_email }}</item>
+          </to><subject>Nous n'avons pas donn&#233; suite &#224; votre demande de Prime {{ form_option_type_prime }}, n&#176;{{ form_number }}.</subject>
+          <body>Bonjour,
+
+Nous n'avons pas donn&#233; suite &#224; votre demande de Prime {{ form_option_type_prime }}, n&#176;{{ form_number }}.
+
+{% if comment_motif_refus%}
+Le commentaire suivant vous est adress&#233; : 
+
+{{ comment_motif_refus}}
+{% endif %}
+
+
+{% if form_user %}
+Vous pouvez `consulter votre demande &lt;{{ form_url }}&gt;`_
+{% else %}
+{% if form_tracking_code %}
+Le code de suivi de votre demande est {{ form_tracking_code }}. Il vous permet d'aller sur  `{{ global_title }} &lt;{{ site_url }}&gt;`_ , en bas &#224; gauche, pour la retrouver.
+{% endif %}
+{% endif %}</body>
+        </item><item id="2" type="set-backoffice-fields">
+          <fields>
+            <field>
+              <field_id>bo1</field_id>
+              <value>rejet&#233;e</value>
+            </field>
+          </fields>
+        </item>
+      </items>
+    </status><status>
+      <id>3</id>
+      <name>Cr&#233;ation GDA</name>
+      <colour>FFFFFF</colour>
+      <visibility>
+        <role>_receiver</role>
+        <role>_testeur</role>
+        <role>_lecteur</role>
+      </visibility><items>
+        <item id="1" type="commentable">
+          <label>Commentaire</label>
+          <button_label>Envoyer la demande d'information</button_label>
+          <by>
+            <item role_id="_receiver">_receiver</item>
+          </by><varname>agent</varname>
+          <required>True</required>
+        </item><item id="2" type="addattachment">
+          <by>
+            <item role_id="_receiver">_receiver</item>
+          </by><required>False</required>
+          <title>Ajouter une pi&#232;ce au dossier</title>
+          <display_title>True</display_title>
+          <button_label>Ajouter une pi&#232;ce jointe</button_label>
+          <display_button>True</display_button>
+          <varname>fichier_complementaire_bo_3</varname>
+          <attach_to_history>True</attach_to_history>
+          <push_to_portfolio>False</push_to_portfolio>
+        </item><item id="3" type="jumponsubmit">
+          <status>0</status>
+          <set_marker_on_status>True</set_marker_on_status>
+        </item><item id="4" type="choice">
+          <label>Cr&#233;ation tiers r&#233;alis&#233;e</label>
+          <by>
+            <item role_id="_receiver">_receiver</item>
+          </by><status>6</status>
+          <require_confirmation>False</require_confirmation>
+          <backoffice_info_text>&lt;p&gt;&lt;strong&gt;&amp;quot;Cr&amp;eacute;ation tiers r&amp;eacute;alis&amp;eacute;e&amp;quot;&amp;nbsp;&lt;/strong&gt;: Utiliser pour confirmer la saisie d'un tiers dans GDA.&lt;/p&gt;</backoffice_info_text>
+          <ignore_form_errors>True</ignore_form_errors>
+          <set_marker_on_status>False</set_marker_on_status>
+        </item><item id="5" type="aggregationemail">
+          <to>
+            <item role_id="0e97f264ddce499aaecc13c11d045914">Instructeurs Performance DEE</item>
+          </to>
+        </item><item id="6" type="choice">
+          <label>Renvoyer aux intructeurs DEE</label>
+          <by>
+            <item role_id="_receiver">_receiver</item>
+          </by><status>new</status>
+          <require_confirmation>False</require_confirmation>
+          <backoffice_info_text>&lt;p&gt;&lt;strong&gt;&amp;quot;Renvoyer aux intructeurs DEE&amp;quot; :&lt;/strong&gt;&amp;nbsp;Le retournera au statut initial d'Analyse en cours, et pourra ainsi &amp;ecirc;tre revu par les instructeurs de la Direction de l'Energie et de l'Environnement, qui ont valid&amp;eacute; le dossier initialement.&lt;/p&gt;</backoffice_info_text>
+          <ignore_form_errors>False</ignore_form_errors>
+          <set_marker_on_status>False</set_marker_on_status>
+        </item>
+      </items>
+    </status><status>
+      <id>6</id>
+      <name>Attente de validation Finances</name>
+      <colour>FFFFFF</colour>
+      <visibility>
+        <role>_receiver</role>
+        <role>_testeur</role>
+        <role>_lecteur</role>
+      </visibility><items>
+        <item id="1" type="choice">
+          <label>Paiement r&#233;alis&#233;</label>
+          <by>
+            <item role_id="_receiver">_receiver</item>
+          </by><status>1</status>
+          <require_confirmation>True</require_confirmation>
+          <backoffice_info_text>&lt;p&gt;&lt;strong&gt;&amp;quot;Paiement r&amp;eacute;alis&amp;eacute;&amp;quot;&amp;nbsp;&lt;/strong&gt;: Ce bouton sert &amp;agrave; confirmer que le paiement a &amp;eacute;t&amp;eacute; envoy&amp;eacute;. C'est la derni&amp;egrave;re &amp;eacute;tape de validation du dossier. Apr&amp;egrave;s, le dossier est renvoy&amp;eacute; au service d'instructeurs de la DEE pour comptage et archivage.&lt;/p&gt;</backoffice_info_text>
+          <ignore_form_errors>False</ignore_form_errors>
+          <set_marker_on_status>False</set_marker_on_status>
+        </item><item id="2" type="choice">
+          <label>Retour &#224; "Cr&#233;ation GDA"</label>
+          <by>
+            <item role_id="_receiver">_receiver</item>
+          </by><status>3</status>
+          <require_confirmation>False</require_confirmation>
+          <backoffice_info_text>&lt;p&gt;&lt;strong&gt;&amp;quot;Retour &amp;agrave; &amp;quot;Cr&amp;eacute;ation GDA&amp;quot;&amp;nbsp;&lt;/strong&gt;: Au cas o&amp;ugrave; la finance refuse la cr&amp;eacute;ation du Tiers, il faut retourner au statut pr&amp;eacute;c&amp;eacute;dent &amp;quot;Cr&amp;eacute;ation GDA&amp;quot; pour communiquer avec l'usager&lt;/p&gt;</backoffice_info_text>
+          <ignore_form_errors>False</ignore_form_errors>
+          <set_marker_on_status>False</set_marker_on_status>
+        </item>
+      </items>
+    </status><status>
+      <id>9</id>
+      <name>G&#233;n&#233;ration Attestation de paiement de prime</name>
+      <colour>FFFFFF</colour>
+      <visibility />
+      <items>
+        <item id="1" type="register-comment" />
+        <item id="2" type="jump">
+          <status>_previous</status>
+          <set_marker_on_status>False</set_marker_on_status>
+        </item>
+      </items>
+    </status><status>
+      <id>1</id>
+      <name>Demande valid&#233;e. Etape 2/2</name>
+      <colour>669966</colour>
+      <visibility />
+      <items>
+        <item id="1" type="sendmail">
+          <to>
+            <item role_id="{{ form_var_email }}">{{ form_var_email }}</item>
+          </to><subject>Versement pour votre Prime {{ form_option_type_prime }}</subject>
+          <body>Bonjour,
+
+Le versement pour votre demande de Prime {{ form_option_type_prime }} n&#176;{{ form_number }} a &#233;t&#233; valid&#233;, celui-ci sera r&#233;alis&#233; sous 10 jours sur le compte bancaire renseign&#233;.
+
+Bonne r&#233;ception.</body>
+        </item><item id="2" type="dispatch">
+          <role_key>_receiver</role_key>
+          <dispatch_type>manual</dispatch_type>
+          <role_id role_id="8de51e72574544cbba155160823bbcd7">Instructeurs Ecologie et Energie (DEE)</role_id>
+        </item><item id="3" type="dispatch">
+          <role_key>_lecteur</role_key>
+          <dispatch_type>manual</dispatch_type>
+          <role_id role_id="0e97f264ddce499aaecc13c11d045914">Instructeurs Performance DEE</role_id>
+        </item><item id="4" type="jump">
+          <status>finished</status>
+          <by>
+            <item role_id="_receiver">_receiver</item>
+          </by><timeout>864000</timeout>
+          <set_marker_on_status>False</set_marker_on_status>
+        </item><item id="5" type="set-backoffice-fields">
+          <label>Statistiques</label>
+          <fields>
+            <field>
+              <field_id>bo2d01958a-d0b4-4b12-8eab-bd5b59c82740</field_id>
+              <value>=round(round(float(form_var_montant_total_subvention.replace(',','.'))) / round(float(form_var_montant_total_facture.replace(',','.'))) *100, 1)</value>
+            </field>
+          </fields>
+        </item>
+      </items>
+    </status><status>
+      <id>finished</id>
+      <name>Subvention vers&#233;e</name>
+      <colour>000000</colour>
+      <forced_endpoint>true</forced_endpoint>
+      <visibility />
+      <items>
+        <item id="1" type="set-backoffice-fields">
+          <fields>
+            <field>
+              <field_id>bo1</field_id>
+              <value>trait&#233;e</value>
+            </field>
+          </fields>
+        </item><item id="2" type="webservice_call">
+          <label>Envoi en GED</label>
+          <url>{{passerelle_url}}cmis/{{form_option_id_connecteur_ged}}/uploadfile</url>
+          <method>POST</method>
+          <post>False</post>
+          <response_type>json</response_type>
+          <varname>envoie_ged</varname>
+          <action_on_app_error>:pass</action_on_app_error>
+          <action_on_4xx>:stop</action_on_4xx>
+          <action_on_5xx>:stop</action_on_5xx>
+          <action_on_bad_data>:pass</action_on_bad_data>
+          <action_on_network_errors>:stop</action_on_network_errors>
+          <notify_on_errors>True</notify_on_errors>
+          <record_on_errors>True</record_on_errors>
+          <record_errors>False</record_errors>
+          <condition>
+            <type>python</type>
+            <value>form_option_activer_l_envoi_en_ged == True</value>
+          </condition>
+        </item><item id="3" type="anonymise">
+          <condition>
+            <type>django</type>
+            <value>form_var_statut_envoi_ged == "OK"</value>
+          </condition>
+        </item>
+      </items>
+    </status><status>
+      <id>2</id>
+      <name>Enveloppe &#233;puis&#233;e</name>
+      <colour>000066</colour>
+      <visibility>
+        <role>_receiver</role>
+        <role>_testeur</role>
+        <role>_lecteur</role>
+      </visibility><items>
+        <item id="1" type="choice">
+          <label>Lancer le paiement</label>
+          <by>
+            <item role_id="_receiver">_receiver</item>
+          </by><status>accepted</status>
+          <require_confirmation>False</require_confirmation>
+          <backoffice_info_text>&lt;p&gt;&amp;quot;&lt;strong&gt;Lancer le paiement&lt;/strong&gt;&amp;quot; : Lorsque l'enveloppe budg&amp;eacute;taire est rallong&amp;eacute;e, et que des fonds sont disponibles, utiliser ce bouton pour envoyer le dossier au service Performance&lt;/p&gt;</backoffice_info_text>
+          <ignore_form_errors>False</ignore_form_errors>
+          <set_marker_on_status>False</set_marker_on_status>
+          <condition>
+            <type>django</type>
+            <value>form_option_enveloppe_epuisee == False</value>
+          </condition>
+        </item><item id="2" type="set-backoffice-fields">
+          <label>Montant</label>
+          <fields>
+            <field>
+              <field_id>bo54eafa96-bef7-4962-b44c-371c01b77125</field_id>
+              <value>{{ validation_var_montant_total_subvention|decimal }}</value>
+            </field><field>
+              <field_id>bo27cc0c87-211b-4eec-8130-fb8dd44779d5</field_id>
+              <value>{{ validation_var_montant_total_facture|decimal }}</value>
+            </field>
+          </fields>
+        </item>
+      </items>
+    </status><status>
+      <id>10</id>
+      <name>Correction des montants</name>
+      <colour>FFFFFF</colour>
+      <visibility />
+      <items>
+        <item id="1" type="form">
+          <by>
+            <item role_id="8de51e72574544cbba155160823bbcd7">Instructeurs Ecologie et Energie (DEE)</item>
+          </by><varname>correction</varname>
+          <formdef>
+            <name>-</name>
+            <fields>
+              <field>
+                <label>Montant de la facture</label>
+                <type>string</type>
+                <required>True</required>
+                <hint>Ne saisir que des chiffres, utiliser une virgule pour les centimes : Exemple: 150,80</hint>
+                <varname>montant_total_facture</varname>
+                <prefill>
+                  <type>none</type>
+                </prefill><anonymise>True</anonymise>
+                <id>2</id>
+              </field><field>
+                <label>Montant subvention</label>
+                <type>string</type>
+                <required>True</required>
+                <hint>Ne saisir que des chiffres, utiliser une virgule pour les centimes : Exemple: 150,80</hint>
+                <varname>montant_total_subvention</varname>
+                <prefill>
+                  <type>none</type>
+                </prefill><anonymise>False</anonymise>
+                <id>1</id>
+              </field><field>
+                <label>&lt;p&gt;Pourcentage de la prime {{ correction_var_montant_total_subvention|decimal|divide:correction_var_montant_total_facture|decimal:2|multiply:100}} %&lt;/p&gt;</label>
+                <type>comment</type>
+                <id>5</id>
+              </field><field>
+                <label>Motif de la correction</label>
+                <type>text</type>
+                <required>False</required>
+                <hint>Ce message est envoy&#233; dans un mail pr&#233;formatt&#233; &#224; l'usager si le montant de la subvention a chang&#233;. 
+Ce mail inclu d&#233;j&#224; le montant initial de la subvention et le nouveau,  ainsi que les formalit&#233;s d'usage.
+Ce texte doit simplement expliquer le motif de la correction en quelques mots.</hint>
+                <varname>motif_correction</varname>
+                <prefill>
+                  <type>none</type>
+                </prefill><rows>3</rows>
+                <pre>False</pre>
+                <id>3</id>
+              </field>
+            </fields>
+          </formdef>
+        </item><item id="2" type="jumponsubmit">
+          <status>11</status>
+          <set_marker_on_status>False</set_marker_on_status>
+        </item>
+      </items>
+    </status><status>
+      <id>11</id>
+      <name>Enregistrement correction</name>
+      <colour>FFFFFF</colour>
+      <visibility>
+        <role>_receiver</role>
+        <role>_testeur</role>
+        <role>_lecteur</role>
+      </visibility><items>
+        <item id="1" type="set-backoffice-fields">
+          <label>Montant</label>
+          <fields>
+            <field>
+              <field_id>bo27cc0c87-211b-4eec-8130-fb8dd44779d5</field_id>
+              <value>{{ correction_var_montant_total_facture|decimal }}</value>
+            </field><field>
+              <field_id>bo54eafa96-bef7-4962-b44c-371c01b77125</field_id>
+              <value>{{ correction_var_montant_total_subvention|decimal }}</value>
+            </field>
+          </fields>
+        </item><item id="2" type="export_to_model">
+          <model_file>
+            <base_filename>mod&#232;le_recap_GDA.odt</base_filename>
+            <content_type>application/vnd.oasis.opendocument.text</content_type>
+            <b64_content>UEsDBBQAAAgAABNFSFFexjIMJwAAACcAAAAIAAAAbWltZXR5cGVhcHBsaWNhdGlvbi92bmQub2Fz
+aXMub3BlbmRvY3VtZW50LnRleHRQSwMEFAAACAAAE0VIUQAAAAAAAAAAAAAAABgAAABDb25maWd1
+cmF0aW9uczIvZmxvYXRlci9QSwMEFAAICAgAE0VIUQAAAAAAAAAAAAAAACcAAABDb25maWd1cmF0
+aW9uczIvYWNjZWxlcmF0b3IvY3VycmVudC54bWwDAFBLBwgAAAAAAgAAAAAAAABQSwMEFAAACAAA
+E0VIUQAAAAAAAAAAAAAAAB8AAABDb25maWd1cmF0aW9uczIvaW1hZ2VzL0JpdG1hcHMvUEsDBBQA
+AAgAABNFSFEAAAAAAAAAAAAAAAAYAAAAQ29uZmlndXJhdGlvbnMyL21lbnViYXIvUEsDBBQAAAgA
+ABNFSFEAAAAAAAAAAAAAAAAcAAAAQ29uZmlndXJhdGlvbnMyL3Byb2dyZXNzYmFyL1BLAwQUAAAI
+AAATRUhRAAAAAAAAAAAAAAAAGgAAAENvbmZpZ3VyYXRpb25zMi9wb3B1cG1lbnUvUEsDBBQAAAgA
+ABNFSFEAAAAAAAAAAAAAAAAYAAAAQ29uZmlndXJhdGlvbnMyL3Rvb2xiYXIvUEsDBBQAAAgAABNF
+SFEAAAAAAAAAAAAAAAAaAAAAQ29uZmlndXJhdGlvbnMyL3N0YXR1c2Jhci9QSwMEFAAACAAAE0VI
+UQAAAAAAAAAAAAAAABoAAABDb25maWd1cmF0aW9uczIvdG9vbHBhbmVsL1BLAwQUAAAIAAATRUhR
+8hfXawIJAAACCQAAGAAAAFRodW1ibmFpbHMvdGh1bWJuYWlsLnBuZ4lQTkcNChoKAAAADUlIRFIA
+AAC1AAABAAgCAAAAekGgjAAACMlJREFUeJzt3D124mgahuE36H1MIingsILucCI1CVGlswRNUplD
+skqK0JNV6ohEoxV4B30I9GkvNd8fvxZPgbCr7Zr7OqddZRAS1dwG9Frit+/fvxtwwW9/9x3Au0Yf
+UOgDCn1AoQ8o9AGFPqDQBxT6gEIfUOgDCn1AoQ8o9AGFPqDQBxT6gDKpj6HrnFlZmnN1XQ/DUBTF
+2RLDYP6y+LWIy5d1XYyurOu6siz3a+i64dKSI3fkZDN4fRP6GNatNU3tH1fr+8534h9U1/ZW+W/n
+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
+4eZIB4u7gno1XzwM74cupQO1JbwE6i7JxT9nksCJluUx3ZdcvwrMGgKqrzdixqT6PeSKoF6xee49
+4LRUj0v1oJ0oHAj025I7x9x6qMcnJc9+eKTWO91CkkdjBtJhA614hUhrwZCa0Tsb80iu78XX6/Ya
+YAidWkiLgvJtTaN5yPXHhqr5cz4V0NLaLwTUWwXIpCGyBHvbtAdv4xN4t/u9RZEF3gBT7/5PUyoa
+qW/zlnBsWwR1EGpCQug+Ufm+nj+NrrBWAQBKxDiFleDa1YxLjqn0+lecI9ebw11Kd5DXBo09XfZe
+2038oQwfm7WoG5v2c5CaQZDCijNYLOAE+9wqsQ+naEdg5Zpf8QSLYIAHx+p9cogFR/8rhTTONiFg
+xjnkqnXC48/t459+Uv1pof957lcAQ+60i0oIVk9s+ofvrtQZPBfUBt55pNWEDItGRqOtHlSSLr6S
+uTY7EeoEfE+8P/yB9bv/A1BLBwgPakE7QAgAAKAtAABQSwMEFAAICAgAE0VIUQAAAAAAAAAAAAAA
+AAwAAABtYW5pZmVzdC5yZGbNk81ugzAQhO88hWXO2EAvBQVyKMq5ap/ANYZYBS/ymhLevo6TVlGk
+quqf1OOuRjPfjrSb7WEcyIuyqMFUNGMpJcpIaLXpKzq7Lrml2zra2LYrH5od8WqDpZ8qunduKjlf
+loUtNwxsz7OiKHia8zxPvCLB1ThxSAzGtI4ICR6NQmn15HwaOc7iCWZXUXTroJB59yA9i906qaCy
+CmG2Ur2HtiCRgUCNCUzKhHSDHLpOS8UzlvNROcGh7eLHYL3Tg6I8YPArjs/Y3ogMpuVe4L2w7lyD
+33yVaHruY3p108Xx3yOUYJwy7k/quzt5/+f+Ls//GeKvtHZEbEDOo2f6kOe08h9VR69QSwcItPdo
+0gUBAACDAwAAUEsDBBQAAAgAABNFSFHilx8OKwQAACsEAAAIAAAAbWV0YS54bWw8P3htbCB2ZXJz
+aW9uPSIxLjAiIGVuY29kaW5nPSJVVEYtOCI/Pgo8b2ZmaWNlOmRvY3VtZW50LW1ldGEgeG1sbnM6
+b2ZmaWNlPSJ1cm46b2FzaXM6bmFtZXM6dGM6b3BlbmRvY3VtZW50OnhtbG5zOm9mZmljZToxLjAi
+IHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB4bWxuczpkYz0iaHR0
+cDovL3B1cmwub3JnL2RjL2VsZW1lbnRzLzEuMS8iIHhtbG5zOm1ldGE9InVybjpvYXNpczpuYW1l
+czp0YzpvcGVuZG9jdW1lbnQ6eG1sbnM6bWV0YToxLjAiIHhtbG5zOm9vbz0iaHR0cDovL29wZW5v
+ZmZpY2Uub3JnLzIwMDQvb2ZmaWNlIiB4bWxuczpncmRkbD0iaHR0cDovL3d3dy53My5vcmcvMjAw
+My9nL2RhdGEtdmlldyMiIHhtbG5zOnRleHRvb289Imh0dHA6Ly9vcGVub2ZmaWNlLm9yZy8yMDEz
+L29mZmljZSIgb2ZmaWNlOnZlcnNpb249IjEuMiI+PG9mZmljZTptZXRhPjxtZXRhOmluaXRpYWwt
+Y3JlYXRvcj5CYXN0aWVuIEhhcmtpbnM8L21ldGE6aW5pdGlhbC1jcmVhdG9yPjxtZXRhOmNyZWF0
+aW9uLWRhdGU+MjAyMC0xMC0wOFQwOTo0NzozOC44NzwvbWV0YTpjcmVhdGlvbi1kYXRlPjxkYzpk
+YXRlPjIwMjAtMTAtMDhUMTA6NDA6MzguNjc8L2RjOmRhdGU+PGRjOmNyZWF0b3I+QmFzdGllbiBI
+YXJraW5zPC9kYzpjcmVhdG9yPjxtZXRhOmVkaXRpbmctZHVyYXRpb24+UFQ1M008L21ldGE6ZWRp
+dGluZy1kdXJhdGlvbj48bWV0YTplZGl0aW5nLWN5Y2xlcz4yPC9tZXRhOmVkaXRpbmctY3ljbGVz
+PjxtZXRhOmdlbmVyYXRvcj5PcGVuT2ZmaWNlLzQuMS43JFdpbjMyIE9wZW5PZmZpY2Uub3JnX3By
+b2plY3QvNDE3bTEkQnVpbGQtOTgwMDwvbWV0YTpnZW5lcmF0b3I+PG1ldGE6ZG9jdW1lbnQtc3Rh
+dGlzdGljIG1ldGE6dGFibGUtY291bnQ9IjAiIG1ldGE6aW1hZ2UtY291bnQ9IjAiIG1ldGE6b2Jq
+ZWN0LWNvdW50PSIwIiBtZXRhOnBhZ2UtY291bnQ9IjEiIG1ldGE6cGFyYWdyYXBoLWNvdW50PSI2
+IiBtZXRhOndvcmQtY291bnQ9IjM3IiBtZXRhOmNoYXJhY3Rlci1jb3VudD0iMjM0Ii8+PC9vZmZp
+Y2U6bWV0YT48L29mZmljZTpkb2N1bWVudC1tZXRhPlBLAwQUAAgICAATRUhRAAAAAAAAAAAAAAAA
+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
+AOskAAAAAA==
+</b64_content>
+          </model_file><convert_to_pdf>True</convert_to_pdf>
+          <backoffice_filefield_id>bof2fd7323-1e33-42dc-865f-385ec756fefe</backoffice_filefield_id>
+          <attach_to_history>False</attach_to_history>
+          <varname>recap_tresor</varname>
+          <push_to_portfolio>False</push_to_portfolio>
+          <method>non-interactive</method>
+          <by>
+            <item role_id="_receiver">_receiver</item>
+          </by><filename>R&#233;cap_{{ form_number }}_{{ form_var_nom }}_{{ form_var_prenom }}</filename>
+        </item><item id="3" type="sendmail">
+          <to>
+            <item role_id="{{ form_var_email }}">{{ form_var_email }}</item>
+            <item role_id="8de51e72574544cbba155160823bbcd7">Instructeurs Ecologie et Energie (DEE)</item>
+          </to><subject>Correction sur votre Prime {{ form_option_type_prime }}, n&#176;{{ form_number }}</subject>
+          <body>Bonjour,
+
+Nos services ont constat&#233; une erreur lors de la saisie du montant de votre prime. 
+Le montant pr&#233;c&#233;dent de {{validation_var_montant_total_subvention|decimal}}&#8364; a d&#251; &#234;tre corrig&#233;.
+Le nouveau montant de votre prime est de : {{ correction_var_montant_total_subvention|decimal }}&#8364;.
+
+Nous vous prions de nous excuser pour la g&#232;ne occasionn&#233;e.
+
+{% if correction_var_motif_correction %} L'instructeur a rajout&#233; le commentaire suivant pour motiver cette correction:
+
+{{ correction_var_motif_correction }}
+{% endif %}
+
+{% if form_user %}
+Vous pouvez `suivre l'&#233;volution de votre demande &lt;{{ form_url }}&gt;`_
+{% else %}
+{% if form_tracking_code %}
+Le code de suivi de votre demande est {{ form_tracking_code }}. Vous seul connaissez ce code, conservez-le. 
+Il vous permet d'aller sur  `{% firstof global_title site_name site "Compte Citoyen" %} &lt;{{ portal_url }}&gt;`_  ({{ portal_url }}), en bas &#224; gauche, pour suivre son avancement.
+{% endif %}
+{% endif %}</body>
+          <condition>
+            <type>django</type>
+            <value>correction_var_montant_total_subvention|decimal != validation_var_montant_total_subvention|decimal</value>
+          </condition>
+        </item><item id="4" type="jump">
+          <status>_previous</status>
+          <set_marker_on_status>False</set_marker_on_status>
+        </item>
+      </items>
+    </status>
+  </possible_status><global_actions>
+    <action>
+      <id>15</id>
+      <name>M'assigner la demande</name>
+      <items>
+        <item id="1" type="set-backoffice-fields">
+          <fields>
+            <field>
+              <field_id>boc1f71b76-23ff-4c9b-b447-a3ba7de01f4e</field_id>
+              <value>{{ session_user_var_first_name|first|upper }}{{ session_user_var_last_name|first|upper }}</value>
+            </field>
+          </fields>
+        </item>
+      </items><triggers>
+        <trigger id="f7eb5822-17e2-4002-8db6-e376dc3c80ac" type="manual">
+          <roles>
+            <item role_id="_receiver">_receiver</item>
+          </roles>
+        </trigger>
+      </triggers>
+    </action><action>
+      <id>16</id>
+      <name>D&#233;sasigner la demande</name>
+      <items>
+        <item id="1" type="set-backoffice-fields">
+          <fields>
+            <field>
+              <field_id>boc1f71b76-23ff-4c9b-b447-a3ba7de01f4e</field_id>
+              <value />
+            </field>
+          </fields>
+        </item>
+      </items><triggers>
+        <trigger id="97bad700-7d8d-4bac-93a3-f86c277b7108" type="manual">
+          <roles>
+            <item role_id="_receiver">_receiver</item>
+          </roles>
+        </trigger>
+      </triggers>
+    </action><action>
+      <id>11</id>
+      <name>Passer &#224; Analyse en cours</name>
+      <items>
+        <item id="1" type="jump">
+          <status>new</status>
+          <set_marker_on_status>False</set_marker_on_status>
+        </item>
+      </items><triggers>
+        <trigger id="01687fb4-fc81-4666-9a87-3e0d60d50e4e" type="manual">
+          <roles>
+            <item role_id="51ebd28771ea4070b3432c2231565e73">Administrateur fonctionnel</item>
+          </roles>
+        </trigger>
+      </triggers>
+    </action><action>
+      <id>8</id>
+      <name>Assigner &#224; la DEE</name>
+      <items>
+        <item id="1" type="dispatch">
+          <role_key>_receiver</role_key>
+          <dispatch_type>manual</dispatch_type>
+          <role_id role_id="8de51e72574544cbba155160823bbcd7">Instructeurs Ecologie et Energie (DEE)</role_id>
+          <condition>
+            <type>python</type>
+            <value>form_status == "Demande valid&#233;e. Etape 2/2"</value>
+          </condition>
+        </item>
+      </items><triggers>
+        <trigger id="8d0589e6-1cca-4579-8e89-56119987577b" type="manual">
+          <roles>
+            <item role_id="51ebd28771ea4070b3432c2231565e73">Administrateur fonctionnel</item>
+          </roles>
+        </trigger>
+      </triggers>
+    </action><action>
+      <id>13</id>
+      <name>Calcul des Statistiques</name>
+      <items>
+        <item id="1" type="set-backoffice-fields">
+          <label>Statistiques</label>
+          <fields>
+            <field>
+              <field_id>bo2d01958a-d0b4-4b12-8eab-bd5b59c82740</field_id>
+              <value>=round(round(float(form_var_montant_total_subvention.replace(',','.'))) / round(float(form_var_montant_total_facture.replace(',','.'))) *100, 1) or None</value>
+            </field>
+          </fields>
+        </item>
+      </items><triggers>
+        <trigger id="d5cebe6d-1922-4c74-b0ef-fa4f838519e4" type="manual">
+          <roles>
+            <item role_id="51ebd28771ea4070b3432c2231565e73">Administrateur fonctionnel</item>
+          </roles>
+        </trigger>
+      </triggers>
+    </action><action>
+      <id>14</id>
+      <name>Geolocalisation</name>
+      <items>
+        <item id="1" type="set-backoffice-fields">
+          <label>G&#233;olocalisation</label>
+          <fields>
+            <field>
+              <field_id>bo668b70f5-6957-4e09-81f1-7f424813ba11</field_id>
+              <value>{% if form_var_UtiliserAdresseProfil == "Oui" %}{{form_user_var_numero_de_voie}} {{ form_user_var_address }} {{ form_user_var_zipcode }} {{ form_user_var_city }}{% elif form_var_address == None %}{{form_var_numero}} {{form_var_rue}} {{ form_var_code_postal }} {{form_var_ville}}{% else %}{{ form_var_adresse }}{% endif %}</value>
+            </field>
+          </fields>
+        </item><item id="2" type="geolocate">
+          <method>address_string</method>
+          <address_string>=form_var_adresse_finale_usager</address_string>
+          <overwrite>True</overwrite>
+        </item>
+      </items><triggers>
+        <trigger id="44cecd1e-0495-4a4f-a581-5b4117a71819" type="manual">
+          <roles>
+            <item role_id="f0b4ac775f4d4451a8dd1986a4f07c89">Administrateur fonctionnel TM</item>
+          </roles>
+        </trigger>
+      </triggers>
+    </action><action>
+      <id>1</id>
+      <name>Rejouer la demande / TEST</name>
+      <items>
+        <item id="1" type="jump">
+          <status>just_submitted</status>
+          <set_marker_on_status>False</set_marker_on_status>
+        </item>
+      </items><triggers>
+        <trigger id="f8b6a484-27bd-4679-8163-cec2c65c276d" type="manual">
+          <roles>
+            <item role_id="_testeur">_testeur</item>
+          </roles>
+        </trigger>
+      </triggers>
+    </action><action>
+      <id>6</id>
+      <name>Anonymisation (90 jours dans statuts finals)</name>
+      <items>
+        <item id="1" type="anonymise" />
+      </items><triggers>
+        <trigger id="a2685bf6-d027-4940-82ca-3b49e215d81b" type="timeout">
+          <anchor>finalized</anchor>
+          <anchor_expression />
+          <anchor_template />
+          <timeout>90</timeout>
+        </trigger><trigger id="aac0fd03-dff2-48a0-b0e1-1bdda33a3718" type="manual">
+          <roles>
+            <item role_id="_testeur">_testeur</item>
+          </roles>
+        </trigger>
+      </triggers>
+    </action><action>
+      <id>12</id>
+      <name>Supprimer la demande</name>
+      <items>
+        <item id="1" type="remove">
+          <condition>
+            <type>django</type>
+            <value>form_var_nom == "HARKINS"</value>
+          </condition>
+        </item>
+      </items><triggers>
+        <trigger id="35ea61c4-adcd-402c-9d94-abc9ed9fd31e" type="manual">
+          <roles>
+            <item role_id="51ebd28771ea4070b3432c2231565e73">Administrateur fonctionnel</item>
+          </roles>
+        </trigger>
+      </triggers>
+    </action><action>
+      <id>17</id>
+      <name>R&#233;cup&#233;ration montant facture et prime</name>
+      <items>
+        <item id="1" type="set-backoffice-fields">
+          <fields>
+            <field>
+              <field_id>bo54eafa96-bef7-4962-b44c-371c01b77125</field_id>
+              <value>{{ validation_var_montant_total_subvention|decimal }}</value>
+            </field><field>
+              <field_id>bo27cc0c87-211b-4eec-8130-fb8dd44779d5</field_id>
+              <value>{{ validation_var_montant_total_facture|decimal }}</value>
+            </field>
+          </fields>
+        </item>
+      </items><triggers>
+        <trigger id="8c26809c-3b67-4bde-9e3b-4408bb3ae8ee" type="manual">
+          <roles>
+            <item role_id="f0b4ac775f4d4451a8dd1986a4f07c89">Administrateur fonctionnel TM</item>
+          </roles>
+        </trigger>
+      </triggers>
+    </action><action>
+      <id>18</id>
+      <name>Corriger montant subvention</name>
+      <items>
+        <item id="1" type="jump">
+          <status>10</status>
+          <condition>
+            <type>django</type>
+            <value>form_status == "Cr&#233;ation GDA" or form_status == "Attente de validation Finances" or form_status == "Demande valid&#233;e. Etape 2/2" or form_status == "Subvention vers&#233;e"</value>
+          </condition><set_marker_on_status>True</set_marker_on_status>
+        </item>
+      </items><triggers>
+        <trigger id="14295642-a04b-4554-9b55-4cf4cc7d73d1" type="manual">
+          <roles>
+            <item role_id="8de51e72574544cbba155160823bbcd7">Instructeurs Ecologie et Energie (DEE)</item>
+          </roles>
+        </trigger>
+      </triggers>
+    </action>
+  </global_actions><criticality_levels>
+    <criticality-level>
+      <id>45337</id>
+      <name>Normal</name>
+      <colour>FFFFFF</colour>
+    </criticality-level>
+  </criticality_levels><variables>
+    <formdef>
+      <name>-</name>
+      <fields>
+        <field>
+          <label>Type prime</label>
+          <type>string</type>
+          <required>True</required>
+          <varname>type_prime</varname>
+          <display_locations>
+            <display_location>validation</display_location>
+            <display_location>summary</display_location>
+          </display_locations><anonymise>True</anonymise>
+          <id>7</id>
+        </field><field>
+          <label>Devis autoris&#233;</label>
+          <type>bool</type>
+          <required>False</required>
+          <varname>devis_autorise</varname>
+          <display_locations>
+            <display_location>validation</display_location>
+            <display_location>summary</display_location>
+          </display_locations><id>9</id>
+        </field><field>
+          <label>Enveloppe &#233;puis&#233;e</label>
+          <type>bool</type>
+          <required>False</required>
+          <varname>enveloppe_epuisee</varname>
+          <display_locations>
+            <display_location>validation</display_location>
+            <display_location>summary</display_location>
+          </display_locations><id>6</id>
+        </field><field>
+          <label>Montant subvention maximale</label>
+          <type>string</type>
+          <required>False</required>
+          <varname>montant_subvention_maximale</varname>
+          <display_locations>
+            <display_location>summary</display_location>
+          </display_locations><prefill>
+            <type>none</type>
+          </prefill><anonymise>True</anonymise>
+          <id>8</id>
+        </field><field>
+          <label>Dur&#233;e de l'engagement conventionnel</label>
+          <type>string</type>
+          <required>False</required>
+          <hint>en ann&#233;es</hint>
+          <varname>duree_de_l_engagement_conventionnel</varname>
+          <display_locations>
+            <display_location>summary</display_location>
+          </display_locations><prefill>
+            <type>none</type>
+          </prefill><anonymise>True</anonymise>
+          <id>2</id>
+        </field><field>
+          <label>Activer l'envoi en GED</label>
+          <type>bool</type>
+          <required>False</required>
+          <varname>activer_l_envoi_en_ged</varname>
+          <display_locations>
+            <display_location>validation</display_location>
+            <display_location>summary</display_location>
+          </display_locations><id>5</id>
+        </field><field>
+          <label>ID Connecteur GED</label>
+          <type>string</type>
+          <required>True</required>
+          <varname>id_connecteur_ged</varname>
+          <display_locations>
+            <display_location>summary</display_location>
+          </display_locations><prefill>
+            <type>none</type>
+          </prefill><anonymise>True</anonymise>
+          <id>4</id>
+        </field>
+      </fields>
+    </formdef>
+  </variables><backoffice-fields>
+    <formdef>
+      <name>-</name>
+      <fields>
+        <field>
+          <label>Adresse usager</label>
+          <type>string</type>
+          <required>False</required>
+          <varname>adresse_finale_usager</varname>
+          <anonymise>True</anonymise>
+          <id>bo668b70f5-6957-4e09-81f1-7f424813ba11</id>
+        </field><field>
+          <label>Assign&#233; &#224;</label>
+          <type>item</type>
+          <required>False</required>
+          <display_locations>
+            <display_location>summary</display_location>
+            <display_location>listings</display_location>
+          </display_locations><items />
+          <display_mode>list</display_mode>
+          <in_filters>False</in_filters>
+          <anonymise>False</anonymise>
+          <display_disabled_items>False</display_disabled_items>
+          <id>boc1f71b76-23ff-4c9b-b447-a3ba7de01f4e</id>
+        </field><field>
+          <label>Montant total de la subvention</label>
+          <type>string</type>
+          <required>False</required>
+          <varname>montant_total_subvention</varname>
+          <display_locations>
+            <display_location>summary</display_location>
+          </display_locations><validation>
+            <type>digits</type>
+          </validation><anonymise>False</anonymise>
+          <id>bo54eafa96-bef7-4962-b44c-371c01b77125</id>
+        </field><field>
+          <label>Montant total de la facture</label>
+          <type>string</type>
+          <required>True</required>
+          <varname>montant_total_facture</varname>
+          <display_locations>
+            <display_location>summary</display_location>
+          </display_locations><anonymise>False</anonymise>
+          <id>bo27cc0c87-211b-4eec-8130-fb8dd44779d5</id>
+        </field><field>
+          <label>% de prime</label>
+          <type>string</type>
+          <required>False</required>
+          <hint>Montant Prime / Montant Facture </hint>
+          <varname>prime_sur_prix</varname>
+          <display_locations>
+            <display_location>listings</display_location>
+          </display_locations><anonymise>False</anonymise>
+          <id>bo2d01958a-d0b4-4b12-8eab-bd5b59c82740</id>
+        </field><field>
+          <label>Facture suite &#224; validation devis</label>
+          <type>file</type>
+          <required>False</required>
+          <varname>facture_suite_devis</varname>
+          <display_locations>
+            <display_location>summary</display_location>
+          </display_locations><allow_portfolio_picking>False</allow_portfolio_picking>
+          <automatic_image_resize>False</automatic_image_resize>
+          <storage>default</storage>
+          <id>bo2a115ec9-fa02-44d7-aaea-f7b51d417ff8</id>
+        </field><field>
+          <label>R&#233;cap</label>
+          <type>file</type>
+          <required>True</required>
+          <varname>recap_tresor</varname>
+          <display_locations>
+            <display_location>summary</display_location>
+          </display_locations><allow_portfolio_picking>False</allow_portfolio_picking>
+          <automatic_image_resize>False</automatic_image_resize>
+          <storage>default</storage>
+          <id>bof2fd7323-1e33-42dc-865f-385ec756fefe</id>
+        </field><field>
+          <label>Fichier compl&#233;mentaire</label>
+          <type>file</type>
+          <required>False</required>
+          <varname>fichier_complementaire</varname>
+          <display_locations>
+            <display_location>summary</display_location>
+          </display_locations><allow_portfolio_picking>False</allow_portfolio_picking>
+          <automatic_image_resize>False</automatic_image_resize>
+          <storage>default</storage>
+          <id>bo16ae28c6-5de7-46e1-abbc-d623d9fb734b</id>
+        </field><field>
+          <label>Statut envoi en GED</label>
+          <type>string</type>
+          <required>False</required>
+          <varname>statut_envoi_ged</varname>
+          <display_locations>
+            <display_location>validation</display_location>
+            <display_location>summary</display_location>
+          </display_locations><anonymise>False</anonymise>
+          <id>bob56289e6-7d8b-46d5-9907-155011fb4a95</id>
+        </field><field>
+          <label>Demande rejet&#233;e ou trait&#233;e</label>
+          <type>item</type>
+          <required>True</required>
+          <display_locations>
+            <display_location>validation</display_location>
+            <display_location>summary</display_location>
+            <display_location>listings</display_location>
+          </display_locations><items>
+            <item>rejet&#233;e</item>
+            <item>trait&#233;e</item>
+          </items><display_mode>list</display_mode>
+          <in_filters>False</in_filters>
+          <anonymise>False</anonymise>
+          <display_disabled_items>False</display_disabled_items>
+          <id>bo1</id>
+        </field>
+      </fields>
+    </formdef>
+  </backoffice-fields>
+</workflow>
